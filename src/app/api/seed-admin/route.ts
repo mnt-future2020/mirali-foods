@@ -1,109 +1,93 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
+import { auth } from "@/lib/auth";
 import { client } from "@/lib/mongodb-client";
-import crypto from "crypto";
 
 /**
  * Seed Admin User API Route
- * Creates an admin user in the database
- * 
- * Usage: GET /api/seed-admin
- * 
- * SECURITY: This should be disabled in production or protected
+ * Creates an admin user via better-auth so the password hash is compatible
+ * with better-auth's login verification.
+ *
+ * Usage: GET /api/seed-admin?token=<SEED_SECRET>
+ *   - Add &force=true to recreate an existing admin (destructive).
+ *
+ * SECURITY:
+ *   - Gated behind the SEED_SECRET env var. If SEED_SECRET is not set, the
+ *     route is disabled (returns 403) so it can't be abused.
+ *   - Does NOT delete the existing admin unless &force=true is passed.
+ *   - Does NOT return the password in the response.
+ *   - Delete this file once the admin account exists.
  */
 
-function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password).digest('hex');
-}
-
-function generateUserId(): string {
-  return crypto.randomBytes(16).toString('hex');
-}
-
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    // Get admin credentials from environment
-    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@miralyfoods.com";
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+    const SEED_SECRET = process.env.SEED_SECRET;
+    const url = new URL(req.url);
+    const token = url.searchParams.get("token");
 
-    await connectDB();
-    const db = client.db();
-
-    // Get collections
-    const usersCollection = db.collection('user');
-    const accountsCollection = db.collection('account');
-
-    // Check if admin already exists
-    const existingAdmin = await usersCollection.findOne({ 
-      email: ADMIN_EMAIL 
-    });
-
-    if (existingAdmin) {
-      return NextResponse.json({
-        success: false,
-        message: "Admin user already exists",
-        admin: {
-          email: existingAdmin.email,
-          role: existingAdmin.role,
-          id: existingAdmin.id,
-        }
-      }, { status: 400 });
+    // Disabled unless a setup secret is configured AND supplied by the caller.
+    if (!SEED_SECRET || token !== SEED_SECRET) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Create admin user
-    const userId = generateUserId();
-    const hashedPassword = hashPassword(ADMIN_PASSWORD);
-    const now = new Date();
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@miralyfoods.com";
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
+    const force = url.searchParams.get("force") === "true";
 
-    const adminUser = {
-      id: userId,
-      email: ADMIN_EMAIL,
-      emailVerified: true,
-      name: "Admin",
-      role: "admin",
-      createdAt: now,
-      updatedAt: now,
-    };
+    const db = client.db();
+    const usersCollection = db.collection("user");
+    const accountsCollection = db.collection("account");
 
-    await usersCollection.insertOne(adminUser);
+    const existingAdmin = await usersCollection.findOne({ email: ADMIN_EMAIL });
 
-    // Create email/password account for the admin
-    const accountId = generateUserId();
-    
-    const adminAccount = {
-      id: accountId,
-      userId: userId,
-      accountId: ADMIN_EMAIL,
-      providerId: "credential",
-      password: hashedPassword,
-      createdAt: now,
-      updatedAt: now,
-    };
+    // Non-destructive by default: never wipe an existing admin unless forced.
+    if (existingAdmin && !force) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Admin user already exists. Pass &force=true to recreate it (this deletes the current admin login).",
+          admin: { email: existingAdmin.email, role: existingAdmin.role },
+        },
+        { status: 200 }
+      );
+    }
 
-    await accountsCollection.insertOne(adminAccount);
+    if (existingAdmin && force) {
+      const existingUserId = existingAdmin.id || existingAdmin._id;
+      await accountsCollection.deleteMany({ userId: existingUserId });
+      await usersCollection.deleteOne({ email: ADMIN_EMAIL });
+    }
+
+    // Create the user through better-auth (hashes the password correctly).
+    await auth.api.signUpEmail({
+      body: {
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
+        name: "Admin",
+      },
+    });
+
+    // Promote to admin and mark the email verified.
+    await usersCollection.updateOne(
+      { email: ADMIN_EMAIL },
+      { $set: { role: "admin", emailVerified: true, updatedAt: new Date() } }
+    );
 
     return NextResponse.json({
       success: true,
-      message: "Admin user created successfully",
-      admin: {
-        email: ADMIN_EMAIL,
-        role: "admin",
-        id: userId,
-      },
-      credentials: {
-        email: ADMIN_EMAIL,
-        password: ADMIN_PASSWORD,
-      },
-      loginUrl: "/admin/login"
+      message: existingAdmin
+        ? "Admin user recreated successfully"
+        : "Admin user created successfully",
+      admin: { email: ADMIN_EMAIL, role: "admin" },
+      loginUrl: "/admin/login",
     });
-
   } catch (error: any) {
     console.error("Seed admin error:", error);
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: error.message 
-      }, 
+        error: error?.message || "Failed to seed admin",
+      },
       { status: 500 }
     );
   }
