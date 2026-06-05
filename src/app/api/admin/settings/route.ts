@@ -11,6 +11,15 @@ import { revalidatePublicData, CACHE_KEYS } from "@/lib/cache";
 
 const MASKED = "********";
 
+// A stored secret looks like "<32-hex iv>:<hex ciphertext>" (see lib/encryption.ts).
+// If an already-encrypted value is submitted back on save — e.g. an old/cached
+// client that rendered the raw ciphertext instead of the masked dots — treat it
+// like MASKED and keep the existing stored value. Re-encrypting ciphertext would
+// double-encrypt it, so it would decrypt to garbage and silently break auth.
+const isEncrypted = (v: unknown): boolean =>
+  typeof v === "string" && /^[0-9a-f]{32}:[0-9a-f]+$/i.test(v);
+const isKept = (v: unknown): boolean => v === MASKED || isEncrypted(v);
+
 export async function GET() {
   try {
     await connectDB();
@@ -162,7 +171,7 @@ export async function POST(req: Request) {
 
     // --- Handle Payment Keys ---
     if (data.payment?.razorpayKeySecret) {
-      if (data.payment.razorpayKeySecret === MASKED) {
+      if (isKept(data.payment.razorpayKeySecret)) {
         data.payment.razorpayKeySecret = existing?.payment?.razorpayKeySecret;
       } else {
         razorpayCredentialsChanged = true;
@@ -173,7 +182,7 @@ export async function POST(req: Request) {
     }
 
     if (data.payment?.razorpayWebhookSecret) {
-      if (data.payment.razorpayWebhookSecret === MASKED) {
+      if (isKept(data.payment.razorpayWebhookSecret)) {
         data.payment.razorpayWebhookSecret =
           existing?.payment?.razorpayWebhookSecret;
       } else {
@@ -208,7 +217,7 @@ export async function POST(req: Request) {
 
     // --- Handle SMTP password ---
     if (data.smtp?.password) {
-      if (data.smtp.password === MASKED) {
+      if (isKept(data.smtp.password)) {
         data.smtp.password = existing?.smtp?.password;
       } else {
         data.smtp.password = encryptPassword(data.smtp.password);
@@ -217,7 +226,7 @@ export async function POST(req: Request) {
 
     // --- Handle Google My Business API Key ---
     if (data.googleMyBusiness?.apiKey) {
-      if (data.googleMyBusiness.apiKey === MASKED) {
+      if (isKept(data.googleMyBusiness.apiKey)) {
         data.googleMyBusiness.apiKey = existing?.googleMyBusiness?.apiKey;
       } else {
         data.googleMyBusiness.apiKey = encryptPassword(
@@ -230,7 +239,7 @@ export async function POST(req: Request) {
     if (data.shiprocket) {
       // Password: keep existing if masked, else encrypt + invalidate cached token
       if (data.shiprocket.password) {
-        if (data.shiprocket.password === MASKED) {
+        if (isKept(data.shiprocket.password)) {
           data.shiprocket.password = existing?.shiprocket?.password;
         } else {
           data.shiprocket.password = encryptPassword(data.shiprocket.password);
@@ -241,7 +250,7 @@ export async function POST(req: Request) {
       }
       // Webhook secret
       if (data.shiprocket.webhookSecret) {
-        if (data.shiprocket.webhookSecret === MASKED) {
+        if (isKept(data.shiprocket.webhookSecret)) {
           data.shiprocket.webhookSecret = existing?.shiprocket?.webhookSecret;
         } else {
           data.shiprocket.webhookSecret = encryptPassword(
