@@ -12,6 +12,27 @@ import {
 // Header "X-Api-Key" must contain the secret saved in admin Shipping settings.
 export async function POST(req: Request) {
   try {
+    // Read the raw body once. Shiprocket's dashboard "Test Webhook" button (and
+    // generic reachability pings) send an empty or non-JSON body — acknowledge
+    // those with 200 so the dashboard test succeeds instead of failing on a
+    // 400/401. An empty body carries no order data, so this is a safe no-op and
+    // doesn't need the token check.
+    const raw = (await req.text()).trim();
+    let payload: any = null;
+    if (raw) {
+      try {
+        payload = JSON.parse(raw);
+      } catch {
+        payload = null;
+      }
+    }
+    if (!payload) {
+      console.log(
+        "[shiprocket webhook] empty/non-JSON body — treating as connectivity test",
+      );
+      return NextResponse.json({ ok: true, ping: true });
+    }
+
     await connectDB();
     const settings = await Settings.findOne();
     const encryptedSecret = settings?.shiprocket?.webhookSecret;
@@ -27,11 +48,6 @@ export async function POST(req: Request) {
     if (!verifyWebhookSignature(headerToken, expectedSecret)) {
       console.warn("[shiprocket webhook] invalid signature");
       return NextResponse.json({ error: "invalid signature" }, { status: 401 });
-    }
-
-    const payload = await req.json().catch(() => null);
-    if (!payload) {
-      return NextResponse.json({ error: "invalid payload" }, { status: 400 });
     }
 
     const result = await applyWebhookToOrder(payload);
