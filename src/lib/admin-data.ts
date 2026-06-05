@@ -505,6 +505,14 @@ export async function getSettingsData() {
     masked.payment.razorpayWebhookSecret = MASKED;
   if (masked.smtp?.password) masked.smtp.password = MASKED;
   if (masked.googleMyBusiness?.apiKey) masked.googleMyBusiness.apiKey = MASKED;
+  if (masked.shiprocket?.password) masked.shiprocket.password = MASKED;
+  if (masked.shiprocket?.webhookSecret)
+    masked.shiprocket.webhookSecret = MASKED;
+  // Never expose the cached Shiprocket auth token to the client
+  if (masked.shiprocket) {
+    delete masked.shiprocket.apiToken;
+    delete masked.shiprocket.apiTokenExpiresAt;
+  }
 
   return JSON.parse(JSON.stringify(masked));
 }
