@@ -105,9 +105,13 @@ export async function POST(req: Request) {
         const flat = await flatRateFor(body.state);
         return NextResponse.json({ ...flat, fallback: "no_courier" });
       }
+      // Charge freight + Shiprocket's flat per-shipment notify fee (which the
+      // rate API doesn't include), rounded up to a whole rupee, so the customer
+      // covers the full amount Shiprocket will bill us — no shipping loss.
+      const notify = Number(sr.notifyCharges) || 0;
       const result: ShiprocketRateResult = {
         source: "shiprocket",
-        rate: quote.rate,
+        rate: Math.ceil(quote.rate + notify),
         courierName: quote.courierName,
         estimatedDelivery:
           quote.estimatedDeliveryDays || quote.etd || undefined,
