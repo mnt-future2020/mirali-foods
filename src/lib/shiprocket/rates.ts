@@ -91,6 +91,11 @@ export interface CourierOption {
   // the serviceability API does NOT return — surfaced so the displayed total
   // matches what Shiprocket actually bills. Set per order in listCouriersForOrder.
   notifyCharges?: number;
+  // Extra charges the API DOES return — added to the freight rate for an
+  // accurate total (0 for most couriers, non-zero for e.g. India Post).
+  coverageCharges?: number;
+  otherCharges?: number;
+  codCharges?: number;
 }
 
 // Returns ALL serviceable couriers for manual selection in the admin UI,
@@ -139,7 +144,21 @@ export async function listCouriers(
         typeof c.rto_charges === "number" ? c.rto_charges : undefined,
       chargeableWeight:
         typeof c.charge_weight === "number" ? c.charge_weight : undefined,
-      expectedPickup: c.pickup_availability || undefined,
+      // "Today" if there's still time before the courier's pickup cutoff,
+      // else "Tomorrow" — same logic Shiprocket's dashboard uses.
+      expectedPickup:
+        typeof c.seconds_left_for_pickup === "number" &&
+        c.seconds_left_for_pickup > 0
+          ? "Today"
+          : "Tomorrow",
+      coverageCharges:
+        typeof c.coverage_charges === "number"
+          ? c.coverage_charges
+          : undefined,
+      otherCharges:
+        typeof c.other_charges === "number" ? c.other_charges : undefined,
+      codCharges:
+        typeof c.cod_charges === "number" ? c.cod_charges : undefined,
     }))
     .sort((a, b) => {
       if (a.recommended !== b.recommended) return a.recommended ? -1 : 1;

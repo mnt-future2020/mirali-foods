@@ -96,6 +96,8 @@ export interface ShiprocketServiceabilityCourier {
   coverage_charges?: number;
   other_charges?: number;
   applied_weight_amount?: number;
+  cutoff_time?: string;
+  seconds_left_for_pickup?: number;
 }
 
 export interface ShiprocketServiceabilityResponse {

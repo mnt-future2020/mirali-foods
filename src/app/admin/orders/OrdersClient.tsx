@@ -1764,14 +1764,28 @@ export default function OrdersClient({
                                       <div className="font-bold text-gray-900">
                                         ₹
                                         {(
-                                          c.rate + (c.notifyCharges || 0)
+                                          c.rate +
+                                          (c.coverageCharges || 0) +
+                                          (c.otherCharges || 0) +
+                                          (c.codCharges || 0) +
+                                          (c.notifyCharges || 0)
                                         ).toFixed(2)}
                                       </div>
-                                      {c.notifyCharges ? (
-                                        <div className="text-[9px] text-gray-400">
-                                          ₹{c.rate} + ₹{c.notifyCharges} notify
-                                        </div>
-                                      ) : null}
+                                      <div className="text-[9px] text-gray-400">
+                                        ₹{c.rate} freight
+                                        {c.coverageCharges
+                                          ? ` + ₹${c.coverageCharges} cov`
+                                          : ""}
+                                        {c.otherCharges
+                                          ? ` + ₹${c.otherCharges} other`
+                                          : ""}
+                                        {c.codCharges
+                                          ? ` + ₹${c.codCharges} cod`
+                                          : ""}
+                                        {c.notifyCharges
+                                          ? ` + ₹${c.notifyCharges} notify`
+                                          : ""}
+                                      </div>
                                     </td>
                                     <td className="py-3 px-3 pr-3 rounded-r-lg align-middle">
                                       <button
