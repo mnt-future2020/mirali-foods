@@ -53,17 +53,42 @@ export function mapShiprocketStatusToOrderStatus(
 ): "Processing" | "Shipping" | "Delivered" | null {
   if (!status) return null;
   const s = status.toLowerCase();
-  if (s.includes("deliver")) return "Delivered";
+
+  // Order matters: several Shiprocket statuses contain the substring "deliver"
+  // but are NOT a successful delivery to the customer. Handle those first.
+  // "UNDELIVERED" / "DELIVERY FAILED" → still with the courier (will reattempt).
   if (
-    s.includes("out for delivery") ||
+    s.includes("undelivered") ||
+    s.includes("not delivered") ||
+    s.includes("delivery failed")
+  ) {
+    return "Shipping";
+  }
+  // RTO = return to origin (parcel goes back to seller, not delivered to buyer).
+  // Don't transition the customer's order to Delivered; leave status unchanged.
+  if (s.includes("rto") || s.includes("return")) {
+    return null;
+  }
+  // "OUT FOR DELIVERY" is a shipping state, not a completed delivery.
+  if (s.includes("out for delivery")) return "Shipping";
+
+  // True delivery to the customer ("DELIVERED").
+  if (s.includes("delivered")) return "Delivered";
+
+  if (
     s.includes("in transit") ||
     s.includes("shipped") ||
+    s.includes("dispatched") ||
     s.includes("picked") ||
     s.includes("pickup")
   ) {
     return "Shipping";
   }
-  if (s.includes("manifest") || s.includes("label") || s.includes("ready")) {
+  if (
+    s.includes("manifest") ||
+    s.includes("label") ||
+    s.includes("ready")
+  ) {
     return "Processing";
   }
   return null;
