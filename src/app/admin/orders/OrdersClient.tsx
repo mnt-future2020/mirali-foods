@@ -152,6 +152,7 @@ export default function OrdersClient({
   };
 
   const openCourierModal = async (order: any) => {
+    setViewingOrder(null); // close the order-details modal behind it
     setSrCourierModalOrder(order);
     setSrCouriers([]);
     setSrContext(null);
