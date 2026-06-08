@@ -74,6 +74,73 @@ export async function getServiceability(
   });
 }
 
+export interface CourierOption {
+  courierCompanyId: number;
+  courierName: string;
+  rate: number;
+  etd?: string;
+  estimatedDeliveryDays?: string;
+  recommended: boolean;
+  mode: string; // "Air" | "Surface"
+  rating?: number;
+  minWeight?: number;
+  rtoCharges?: number;
+  chargeableWeight?: number;
+}
+
+// Returns ALL serviceable couriers for manual selection in the admin UI,
+// sorted recommended-first then cheapest.
+export async function listCouriers(
+  args: ServiceabilityArgs,
+): Promise<CourierOption[]> {
+  const { pickupPincode, deliveryPincode, weight, cod = false } = args;
+  if (!pickupPincode || !deliveryPincode || !weight) {
+    throw new ShiprocketError(
+      "INVALID_INPUT",
+      "pickupPincode, deliveryPincode and weight are required",
+      400,
+    );
+  }
+  const params = new URLSearchParams({
+    pickup_postcode: pickupPincode,
+    delivery_postcode: deliveryPincode,
+    weight: String(weight),
+    cod: cod ? "1" : "0",
+  });
+  if (args.declaredValue) {
+    params.set("declared_value", String(args.declaredValue));
+  }
+  const res = await srFetch<ShiprocketServiceabilityResponse>(
+    `/v1/external/courier/serviceability/?${params.toString()}`,
+    { method: "GET" },
+  );
+  const couriers = res?.data?.available_courier_companies || [];
+  const recommendedId =
+    res?.data?.shiprocket_recommended_courier_id ||
+    res?.data?.recommended_courier_company_id ||
+    res?.data?.cheapest_courier_id;
+  return couriers
+    .map((c) => ({
+      courierCompanyId: c.courier_company_id,
+      courierName: c.courier_name,
+      rate: Number(c.rate),
+      etd: c.etd,
+      estimatedDeliveryDays: c.estimated_delivery_days,
+      recommended: c.courier_company_id === recommendedId,
+      mode: c.is_surface ? "Surface" : "Air",
+      rating: typeof c.rating === "number" ? c.rating : undefined,
+      minWeight: typeof c.min_weight === "number" ? c.min_weight : undefined,
+      rtoCharges:
+        typeof c.rto_charges === "number" ? c.rto_charges : undefined,
+      chargeableWeight:
+        typeof c.charge_weight === "number" ? c.charge_weight : undefined,
+    }))
+    .sort((a, b) => {
+      if (a.recommended !== b.recommended) return a.recommended ? -1 : 1;
+      return a.rate - b.rate;
+    });
+}
+
 // Helper used by the checkout rates endpoint. Caller supplies cart items;
 // we resolve weights via Product defaults.
 export async function quoteShippingForCart(args: {

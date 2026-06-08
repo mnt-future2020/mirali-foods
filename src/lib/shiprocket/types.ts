@@ -87,6 +87,10 @@ export interface ShiprocketServiceabilityCourier {
   estimated_delivery_days: string;
   is_surface: boolean;
   is_hyperlocal: boolean;
+  rating?: number;
+  min_weight?: number;
+  rto_charges?: number;
+  charge_weight?: number;
 }
 
 export interface ShiprocketServiceabilityResponse {

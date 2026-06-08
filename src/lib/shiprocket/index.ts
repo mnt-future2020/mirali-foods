@@ -10,14 +10,17 @@ export type { ShiprocketConfig } from "./client";
 export {
   pushOrderToShiprocket,
   cancelShiprocketOrder,
+  listCouriersForOrder,
+  assignAwbForOrder,
 } from "./orders";
 export type { PushResult, PushFailure } from "./orders";
 export {
   getServiceability,
   quoteShippingForCart,
   listPickupLocations,
+  listCouriers,
 } from "./rates";
-export type { ServiceabilityArgs, RateQuote } from "./rates";
+export type { ServiceabilityArgs, RateQuote, CourierOption } from "./rates";
 export {
   trackByAwb,
   trackByShipmentId,

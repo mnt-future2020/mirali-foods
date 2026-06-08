@@ -2,6 +2,7 @@ import connectDB from "@/lib/mongodb";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
 import { getShiprocketConfig, srFetch } from "./client";
+import { listCouriers, CourierOption } from "./rates";
 import {
   ShiprocketCreateOrderPayload,
   ShiprocketCreateOrderResponse,
@@ -99,6 +100,22 @@ function buildPayload({
     height: Math.max(1, Math.round(totalHeight)),
     weight: Number(totalWeight.toFixed(3)),
   };
+}
+
+function computeOrderWeight(
+  order: OrderDoc,
+  productMap: Map<string, ProductDoc>,
+  config: Awaited<ReturnType<typeof getShiprocketConfig>>,
+): number {
+  let totalWeight = 0;
+  for (const it of order.orderItems) {
+    const product = productMap.get(String(it.product));
+    const w = Number(product?.weight) || config.defaultWeight;
+    totalWeight += w * it.qty;
+  }
+  return totalWeight > 0
+    ? Number(totalWeight.toFixed(3))
+    : config.defaultWeight;
 }
 
 async function loadProductsForOrder(
@@ -201,6 +218,172 @@ export async function pushOrderToShiprocket(
       $inc: { "shiprocket.pushAttempts": 1 },
     });
     return { ok: false, code, message, httpStatus };
+  }
+}
+
+export interface OrderShipContext {
+  pickupPincode: string;
+  deliveryPincode: string;
+  deliveryState?: string;
+  orderValue: number;
+  paymentMethod: string; // "Prepaid" | "COD"
+  weightKg: number;
+}
+
+// Lists the serviceable couriers for an already-pushed order so an admin can
+// pick one in the dashboard (instead of choosing in the Shiprocket UI).
+export async function listCouriersForOrder(
+  orderId: string,
+): Promise<
+  | { ok: true; couriers: CourierOption[]; context: OrderShipContext }
+  | PushFailure
+> {
+  await connectDB();
+  const order: OrderDoc = await Order.findById(orderId);
+  if (!order) {
+    return {
+      ok: false,
+      code: "ORDER_NOT_FOUND",
+      message: "Order not found",
+      httpStatus: 404,
+    };
+  }
+  try {
+    const config = await getShiprocketConfig();
+    if (!config.pickupPincode) {
+      return {
+        ok: false,
+        code: "MISSING_PICKUP_PINCODE",
+        message: "Set Pickup Pincode in Shiprocket settings first",
+        httpStatus: 400,
+      };
+    }
+    const deliveryPincode = String(order.shippingAddress?.pincode || "");
+    if (!deliveryPincode) {
+      return {
+        ok: false,
+        code: "NO_DELIVERY_PINCODE",
+        message: "Order has no delivery pincode",
+        httpStatus: 400,
+      };
+    }
+    const productMap = await loadProductsForOrder(order);
+    const weight = computeOrderWeight(order, productMap, config);
+    const isCod = String(order.paymentMethod).toLowerCase().includes("cod");
+    const couriers = await listCouriers({
+      pickupPincode: config.pickupPincode,
+      deliveryPincode,
+      weight,
+      cod: isCod,
+      declaredValue: order.totalPrice,
+    });
+    return {
+      ok: true,
+      couriers,
+      context: {
+        pickupPincode: config.pickupPincode,
+        deliveryPincode,
+        deliveryState: order.shippingAddress?.state || undefined,
+        orderValue: Number(order.totalPrice) || 0,
+        paymentMethod: isCod ? "COD" : "Prepaid",
+        weightKg: weight,
+      },
+    };
+  } catch (err: any) {
+    const isSrErr = err instanceof ShiprocketError;
+    return {
+      ok: false,
+      code: isSrErr ? err.code : "UNKNOWN",
+      message: err?.message || "Failed to load couriers",
+      httpStatus: isSrErr ? err.httpStatus : 500,
+    };
+  }
+}
+
+// Assigns an AWB for a pushed order using the chosen courier (or Shiprocket's
+// default if courierId is omitted), then best-effort schedules a pickup.
+export async function assignAwbForOrder(
+  orderId: string,
+  courierId?: number,
+): Promise<
+  { ok: true; awbCode: string; courierName: string } | PushFailure
+> {
+  await connectDB();
+  const order: OrderDoc = await Order.findById(orderId);
+  if (!order) {
+    return {
+      ok: false,
+      code: "ORDER_NOT_FOUND",
+      message: "Order not found",
+      httpStatus: 404,
+    };
+  }
+  const shipmentId = order.shiprocket?.shipmentId;
+  if (!shipmentId) {
+    return {
+      ok: false,
+      code: "NO_SHIPMENT",
+      message: "Push the order to Shiprocket first",
+      httpStatus: 400,
+    };
+  }
+  if (order.awbNumber) {
+    return {
+      ok: true,
+      awbCode: order.awbNumber,
+      courierName: order.courierName || "",
+    };
+  }
+  try {
+    const body: Record<string, any> = { shipment_id: Number(shipmentId) };
+    if (courierId) body.courier_id = courierId;
+    const res = await srFetch<any>("/v1/external/courier/assign/awb", {
+      method: "POST",
+      body,
+    });
+    const data = res?.response?.data || {};
+    const awbCode = data.awb_code ? String(data.awb_code) : "";
+    const courierName = data.courier_name ? String(data.courier_name) : "";
+    if (!awbCode) {
+      const reason =
+        data.awb_assign_error ||
+        res?.awb_assign_error ||
+        res?.message ||
+        "Shiprocket did not return an AWB";
+      return {
+        ok: false,
+        code: "AWB_NOT_ASSIGNED",
+        message: String(reason),
+        httpStatus: 422,
+      };
+    }
+    await Order.findByIdAndUpdate(order._id, {
+      $set: {
+        awbNumber: awbCode,
+        courierName: courierName || order.courierName,
+        "shiprocket.status": "pushed",
+        "shiprocket.lastSyncedAt": new Date(),
+        "shiprocket.lastError": null,
+      },
+    });
+    // Best-effort pickup request — don't fail the assignment if it errors.
+    try {
+      await srFetch("/v1/external/courier/generate/pickup", {
+        method: "POST",
+        body: { shipment_id: [Number(shipmentId)] },
+      });
+    } catch (e: any) {
+      console.warn("[shiprocket] generate pickup failed:", e?.message || e);
+    }
+    return { ok: true, awbCode, courierName };
+  } catch (err: any) {
+    const isSrErr = err instanceof ShiprocketError;
+    return {
+      ok: false,
+      code: isSrErr ? err.code : "UNKNOWN",
+      message: err?.message || "AWB assignment failed",
+      httpStatus: isSrErr ? err.httpStatus : 500,
+    };
   }
 }
 

@@ -64,6 +64,14 @@ export default function OrdersClient({
     shippingNotes: "",
   });
   const [srBusyOrderId, setSrBusyOrderId] = useState<string | null>(null);
+  const [srCouriers, setSrCouriers] = useState<any[]>([]);
+  const [srContext, setSrContext] = useState<any>(null);
+  const [srCourierLoading, setSrCourierLoading] = useState(false);
+  const [srAssigningId, setSrAssigningId] = useState<number | null>(null);
+  const [srCourierModalOrder, setSrCourierModalOrder] = useState<any>(null);
+  const [srTab, setSrTab] = useState<
+    "recommended" | "surface" | "air" | "all"
+  >("recommended");
 
   const updateOrderInList = (orderId: string, patch: Record<string, any>) => {
     setOrders((prev) =>
@@ -142,6 +150,71 @@ export default function OrdersClient({
       setSrBusyOrderId(null);
     }
   };
+
+  const openCourierModal = async (order: any) => {
+    setSrCourierModalOrder(order);
+    setSrCouriers([]);
+    setSrContext(null);
+    setSrTab("recommended");
+    setSrCourierLoading(true);
+    try {
+      const res = await fetch(
+        `/api/admin/orders/${order._id}/shiprocket/couriers`,
+      );
+      const data = await res.json();
+      if (res.ok) {
+        setSrCouriers(data.couriers || []);
+        setSrContext(data.context || null);
+        if (!data.couriers?.length) {
+          toast.error("No couriers available for this pincode/weight");
+        }
+      } else {
+        toast.error(data.error || "Failed to load couriers");
+        setSrCourierModalOrder(null);
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to load couriers");
+      setSrCourierModalOrder(null);
+    } finally {
+      setSrCourierLoading(false);
+    }
+  };
+
+  const closeCourierModal = () => {
+    setSrCourierModalOrder(null);
+    setSrCouriers([]);
+    setSrContext(null);
+  };
+
+  const handleAssignAwb = async (orderId: string, courierId: number) => {
+    setSrAssigningId(courierId);
+    try {
+      const res = await fetch(
+        `/api/admin/orders/${orderId}/shiprocket/assign`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ courierId }),
+        },
+      );
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(`AWB assigned: ${data.awbCode}`);
+        updateOrderInList(orderId, {
+          awbNumber: data.awbCode,
+          courierName: data.courierName,
+        });
+        closeCourierModal();
+      } else {
+        toast.error(data.error || "AWB assignment failed");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "AWB assignment failed");
+    } finally {
+      setSrAssigningId(null);
+    }
+  };
+
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState("Processing");
   const [bulkUpdating, setBulkUpdating] = useState(false);
@@ -1085,7 +1158,7 @@ export default function OrdersClient({
                         )}
                       </div>
                     </div>
-                    <div className="flex gap-2 shrink-0">
+                    <div className="flex gap-2 shrink-0 flex-wrap">
                       {(!viewingOrder.shiprocket?.orderId ||
                         viewingOrder.shiprocket?.status === "failed") && (
                         <button
@@ -1098,6 +1171,15 @@ export default function OrdersClient({
                             : "Push to Shiprocket"}
                         </button>
                       )}
+                      {viewingOrder.shiprocket?.shipmentId &&
+                        !viewingOrder.awbNumber && (
+                          <button
+                            onClick={() => openCourierModal(viewingOrder)}
+                            className="bg-amber-500 text-white px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-50"
+                          >
+                            Select courier &amp; ship
+                          </button>
+                        )}
                       {viewingOrder.shiprocket?.shipmentId && (
                         <button
                           onClick={() =>
@@ -1113,6 +1195,19 @@ export default function OrdersClient({
                       )}
                     </div>
                   </div>
+
+                  {viewingOrder.awbNumber && (
+                    <div className="mt-3 text-xs text-gray-600">
+                      AWB{" "}
+                      <span className="font-mono font-semibold text-gray-800">
+                        {viewingOrder.awbNumber}
+                      </span>
+                      {viewingOrder.courierName
+                        ? ` · ${viewingOrder.courierName}`
+                        : ""}
+                    </div>
+                  )}
+
                 </div>
 
                 {/* Customer Information */}
@@ -1487,6 +1582,200 @@ export default function OrdersClient({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Select Courier Partner modal */}
+      {srCourierModalOrder && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-black/40">
+          <div className="bg-white w-full max-w-5xl max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h3 className="text-lg font-black text-gray-900">
+                Select Courier Partner
+              </h3>
+              <button
+                onClick={closeCourierModal}
+                className="text-gray-400 hover:text-gray-700"
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="flex flex-col md:flex-row min-h-0 flex-1">
+              {/* Order details */}
+              <div className="md:w-60 shrink-0 border-b md:border-b-0 md:border-r border-gray-100 p-6 space-y-4 bg-gray-50/60">
+                <div className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                  Order Details
+                </div>
+                {srContext ? (
+                  <div className="space-y-3">
+                    {[
+                      ["Pickup From", srContext.pickupPincode],
+                      [
+                        "Deliver To",
+                        `${srContext.deliveryPincode}${srContext.deliveryState ? `, ${srContext.deliveryState}` : ""}`,
+                      ],
+                      ["Order Value", `₹${srContext.orderValue}`],
+                      ["Payment Mode", srContext.paymentMethod],
+                      ["Applicable Weight", `${srContext.weightKg} Kg`],
+                    ].map(([label, value]) => (
+                      <div key={label}>
+                        <div className="text-[10px] uppercase tracking-wide text-gray-400 font-bold">
+                          {label}
+                        </div>
+                        <div className="font-semibold text-gray-800 text-sm">
+                          {value}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-400">Loading…</div>
+                )}
+              </div>
+
+              {/* Courier list */}
+              <div className="flex-1 min-w-0 flex flex-col">
+                <div className="flex items-center gap-6 px-6 pt-4 border-b border-gray-100">
+                  {(["recommended", "surface", "air", "all"] as const).map(
+                    (t) => (
+                      <button
+                        key={t}
+                        onClick={() => setSrTab(t)}
+                        className={`pb-3 text-sm font-bold capitalize border-b-2 -mb-px transition-colors ${
+                          srTab === t
+                            ? "border-primary text-primary"
+                            : "border-transparent text-gray-400 hover:text-gray-600"
+                        }`}
+                      >
+                        {t}
+                      </button>
+                    ),
+                  )}
+                </div>
+
+                <div className="p-6 overflow-auto flex-1">
+                  {srCourierLoading ? (
+                    <div className="text-center text-gray-400 py-12 text-sm">
+                      Loading couriers…
+                    </div>
+                  ) : (
+                    (() => {
+                      const list = srCouriers.filter((c) =>
+                        srTab === "surface"
+                          ? c.mode === "Surface"
+                          : srTab === "air"
+                            ? c.mode === "Air"
+                            : true,
+                      );
+                      if (!list.length) {
+                        return (
+                          <div className="text-center text-gray-400 py-12 text-sm">
+                            No couriers found for this option.
+                          </div>
+                        );
+                      }
+                      return (
+                        <>
+                          <div className="text-xs text-gray-500 font-semibold mb-3">
+                            {list.length} Couriers Found
+                          </div>
+                          <div className="space-y-3">
+                            {list.map((c) => (
+                              <div
+                                key={c.courierCompanyId}
+                                className={`rounded-xl border p-4 ${
+                                  c.recommended
+                                    ? "border-primary/60 ring-1 ring-primary/20"
+                                    : "border-gray-100"
+                                }`}
+                              >
+                                {c.recommended && (
+                                  <span className="inline-block text-[9px] font-black uppercase tracking-wide bg-primary text-white px-2 py-0.5 rounded mb-2">
+                                    Recommended
+                                  </span>
+                                )}
+                                <div className="flex items-center justify-between gap-4 flex-wrap">
+                                  <div className="min-w-0">
+                                    <div className="font-bold text-gray-900">
+                                      {c.courierName}
+                                    </div>
+                                    <div className="text-[11px] text-gray-500 mt-0.5">
+                                      {c.mode}
+                                      {c.minWeight != null
+                                        ? ` · Min-weight: ${c.minWeight} Kg`
+                                        : ""}
+                                      {c.rtoCharges != null
+                                        ? ` · RTO: ₹${c.rtoCharges}`
+                                        : ""}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-4 sm:gap-5 text-sm">
+                                    {c.rating != null && (
+                                      <div className="text-center">
+                                        <div className="text-[9px] uppercase text-gray-400 font-bold">
+                                          Rating
+                                        </div>
+                                        <div className="font-bold text-green-600">
+                                          {c.rating}
+                                        </div>
+                                      </div>
+                                    )}
+                                    <div className="text-center">
+                                      <div className="text-[9px] uppercase text-gray-400 font-bold">
+                                        Est. Delivery
+                                      </div>
+                                      <div className="font-semibold text-gray-700">
+                                        {c.etd ||
+                                          `${c.estimatedDeliveryDays || "?"} days`}
+                                      </div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="text-[9px] uppercase text-gray-400 font-bold">
+                                        Charge Wt
+                                      </div>
+                                      <div className="font-semibold text-gray-700">
+                                        {c.chargeableWeight ??
+                                          srContext?.weightKg}{" "}
+                                        Kg
+                                      </div>
+                                    </div>
+                                    <div className="text-center">
+                                      <div className="text-[9px] uppercase text-gray-400 font-bold">
+                                        Charges
+                                      </div>
+                                      <div className="font-bold text-gray-900">
+                                        ₹{c.rate}
+                                      </div>
+                                    </div>
+                                    <button
+                                      onClick={() =>
+                                        handleAssignAwb(
+                                          srCourierModalOrder._id,
+                                          c.courierCompanyId,
+                                        )
+                                      }
+                                      disabled={srAssigningId !== null}
+                                      className="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-50 shrink-0"
+                                    >
+                                      {srAssigningId === c.courierCompanyId
+                                        ? "Shipping…"
+                                        : "Ship Now"}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      );
+                    })()
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
