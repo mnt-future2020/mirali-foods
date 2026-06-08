@@ -48,7 +48,11 @@ export function mapEventToOrderUpdate(
     update.status = mapped;
     if (mapped === "Delivered") {
       update.isDelivered = true;
-      update.deliveredAt = new Date();
+      // Prefer the actual delivery timestamp from the payload over "now".
+      const ts = payload.current_timestamp
+        ? new Date(payload.current_timestamp)
+        : null;
+      update.deliveredAt = ts && !isNaN(ts.getTime()) ? ts : new Date();
     }
   }
   return update;
@@ -60,7 +64,10 @@ export async function applyWebhookToOrder(
   await connectDB();
   const update = mapEventToOrderUpdate(payload);
 
-  // Try matching by our internal order id (we send order._id as order_id in createOrder).
+  // Match priority:
+  // 1. payload.order_id is OUR source id — we send String(order._id) on create.
+  // 2. payload.sr_order_id is Shiprocket's own id — we store it as shiprocket.orderId.
+  // 3. fall back to the AWB.
   let order: any = null;
   if (payload.order_id) {
     const oid = String(payload.order_id);
@@ -75,6 +82,15 @@ export async function applyWebhookToOrder(
         ],
       });
     }
+  }
+  if (!order && payload.sr_order_id) {
+    const srid = String(payload.sr_order_id);
+    order = await Order.findOne({
+      $or: [
+        { "shiprocket.orderId": srid },
+        { "shiprocket.shipmentId": srid },
+      ],
+    });
   }
   if (!order && payload.awb) {
     order = await Order.findOne({ awbNumber: payload.awb });
