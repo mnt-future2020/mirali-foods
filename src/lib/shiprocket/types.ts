@@ -133,8 +133,10 @@ export interface ShiprocketWebhookPayload {
   current_status: string;
   current_status_id?: number;
   current_timestamp?: string;
-  order_id?: string | number;
+  order_id?: string | number; // our source order id (we send order._id)
+  sr_order_id?: string | number; // Shiprocket's own order id
   shipment_status?: string;
+  shipment_status_id?: number;
   courier_name?: string;
   etd?: string;
   scans?: Array<{
