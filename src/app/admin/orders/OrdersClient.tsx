@@ -1736,6 +1736,16 @@ export default function OrdersClient({
                                           RTO Charges: ₹{c.rtoCharges}
                                         </div>
                                       )}
+                                      {c.charges && (
+                                        <div className="text-[9px] text-blue-500 mt-0.5 font-mono">
+                                          rate ₹{c.charges.rate ?? "-"} · fr ₹
+                                          {c.charges.freightCharge ?? "-"} · cod ₹
+                                          {c.charges.codCharges ?? "-"} · cov ₹
+                                          {c.charges.coverageCharges ?? "-"} · oth ₹
+                                          {c.charges.otherCharges ?? "-"} · awt ₹
+                                          {c.charges.appliedWeightAmount ?? "-"}
+                                        </div>
+                                      )}
                                     </td>
                                     <td className="py-3 px-3 align-middle">
                                       <RatingRing value={c.rating} />
@@ -1824,7 +1834,7 @@ function RatingRing({ value }: { value?: number }) {
         />
       </svg>
       <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-gray-800">
-        {value}
+        {value.toFixed(1)}
       </span>
     </div>
   );

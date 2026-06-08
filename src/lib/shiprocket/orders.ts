@@ -270,12 +270,16 @@ export async function listCouriersForOrder(
     const productMap = await loadProductsForOrder(order);
     const weight = computeOrderWeight(order, productMap, config);
     const isCod = String(order.paymentMethod).toLowerCase().includes("cod");
+    // Declared value = value of the GOODS (itemsPrice), not the order total
+    // (which also includes the shipping the customer paid). Matches what we
+    // send Shiprocket as sub_total and what Shiprocket shows as Order Value.
+    const goodsValue = Number(order.itemsPrice) || Number(order.totalPrice) || 0;
     const couriers = await listCouriers({
       pickupPincode: config.pickupPincode,
       deliveryPincode,
       weight,
       cod: isCod,
-      declaredValue: order.totalPrice,
+      declaredValue: goodsValue,
     });
     return {
       ok: true,
@@ -284,7 +288,7 @@ export async function listCouriersForOrder(
         pickupPincode: config.pickupPincode,
         deliveryPincode,
         deliveryState: order.shippingAddress?.state || undefined,
-        orderValue: Number(order.totalPrice) || 0,
+        orderValue: goodsValue,
         paymentMethod: isCod ? "COD" : "Prepaid",
         weightKg: weight,
       },
