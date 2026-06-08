@@ -1723,26 +1723,31 @@ export default function OrdersClient({
                                           Recommended
                                         </span>
                                       )}
-                                      <div className="font-bold text-gray-900">
-                                        {c.courierName}
-                                      </div>
-                                      <div className="text-[10px] text-gray-500">
-                                        {c.mode}
-                                        {c.minWeight != null
-                                          ? ` | Min-weight: ${c.minWeight} Kg`
-                                          : ""}
-                                      </div>
-                                      {c.rtoCharges != null && (
-                                        <div className="text-[10px] text-gray-400">
-                                          RTO Charges: ₹{c.rtoCharges}
+                                      <div className="flex items-start gap-2.5">
+                                        <CourierAvatar name={c.courierName} />
+                                        <div className="min-w-0">
+                                          <div className="font-bold text-gray-900">
+                                            {c.courierName}
+                                          </div>
+                                          <div className="text-[10px] text-gray-500">
+                                            {c.mode}
+                                            {c.minWeight != null
+                                              ? ` | Min-weight: ${c.minWeight} Kg`
+                                              : ""}
+                                          </div>
+                                          {c.rtoCharges != null && (
+                                            <div className="text-[10px] text-gray-400">
+                                              RTO Charges: ₹{c.rtoCharges}
+                                            </div>
+                                          )}
                                         </div>
-                                      )}
+                                      </div>
                                     </td>
                                     <td className="py-3 px-3 align-middle">
                                       <RatingRing value={c.rating} />
                                     </td>
                                     <td className="py-3 px-3 align-middle text-gray-600">
-                                      {c.expectedPickup || "—"}
+                                      {c.expectedPickup || "Tomorrow"}
                                     </td>
                                     <td className="py-3 px-3 align-middle text-gray-600">
                                       {c.etd ||
@@ -1799,6 +1804,29 @@ export default function OrdersClient({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function CourierAvatar({ name }: { name: string }) {
+  const word = (name || "").trim().split(/\s+/)[0] || "?";
+  const initials = word.slice(0, 2).toUpperCase();
+  const colors = [
+    "bg-indigo-100 text-indigo-700",
+    "bg-emerald-100 text-emerald-700",
+    "bg-amber-100 text-amber-700",
+    "bg-rose-100 text-rose-700",
+    "bg-sky-100 text-sky-700",
+    "bg-violet-100 text-violet-700",
+  ];
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  const cls = colors[h % colors.length];
+  return (
+    <div
+      className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 ${cls}`}
+    >
+      {initials}
     </div>
   );
 }
