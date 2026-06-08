@@ -231,12 +231,27 @@ export async function srFetch<T = unknown>(
       }
     }
     if (!res.ok) {
+      // Pull Shiprocket's own reason out of the body (422s carry the real
+      // validation error here, e.g. "Wrong Pickup location entered.").
+      let detail = "";
+      if (parsed && typeof parsed === "object") {
+        const p = parsed as Record<string, any>;
+        if (p.message) detail = String(p.message);
+        if (p.errors && typeof p.errors === "object") {
+          const flat = Object.entries(p.errors)
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
+            .join("; ");
+          detail = detail ? `${detail} (${flat})` : flat;
+        }
+      } else if (typeof parsed === "string") {
+        detail = parsed;
+      }
       console.error(
-        `[shiprocket] ${init.method} ${path} -> ${res.status} (${durationMs}ms)`,
+        `[shiprocket] ${init.method} ${path} -> ${res.status} (${durationMs}ms)${detail ? ` :: ${detail}` : ""}`,
       );
       throw new ShiprocketError(
         "API_ERROR",
-        `Shiprocket ${res.status} on ${path}`,
+        `Shiprocket ${res.status} on ${path}${detail ? `: ${detail}` : ""}`,
         res.status,
         parsed,
       );
