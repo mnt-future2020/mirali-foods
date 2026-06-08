@@ -69,12 +69,20 @@ function buildPayload({
   const address = order.shippingAddress;
   const isCod = String(order.paymentMethod).toLowerCase().includes("cod");
 
+  // Shiprocket requires billing_last_name to be PRESENT in the payload (it can be
+  // empty, but the key must exist). Split the stored full name into first + last.
+  const fullName = String(address.fullName || "").trim();
+  const nameParts = fullName.split(/\s+/).filter(Boolean);
+  const firstName = nameParts[0] || "Customer";
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
+
   return {
     order_id: String(order._id),
     order_date: formatOrderDate(new Date(order.createdAt || Date.now())),
     pickup_location: config.pickupLocation,
     channel_id: config.channelId,
-    billing_customer_name: address.fullName,
+    billing_customer_name: firstName,
+    billing_last_name: lastName,
     billing_address: address.address,
     billing_city: address.city,
     billing_pincode: address.pincode,
