@@ -7,7 +7,12 @@ import {
   ShiprocketTrackingResponse,
 } from "./types";
 
-function normalize(data: ShiprocketTrackingData): NormalizedTracking {
+function normalize(data?: ShiprocketTrackingData): NormalizedTracking {
+  // No tracking yet (e.g. order pushed but AWB not assigned) — Shiprocket may
+  // omit tracking_data entirely. Return an empty snapshot instead of crashing.
+  if (!data) {
+    return { status: "", history: [] };
+  }
   const latestTrack = data.shipment_track?.[0];
   const expectedDelivery = latestTrack?.edd ? new Date(latestTrack.edd) : undefined;
   return {
@@ -33,17 +38,20 @@ export async function trackByAwb(awb: string): Promise<NormalizedTracking> {
     `/v1/external/courier/track/awb/${encodeURIComponent(awb)}`,
     { method: "GET" },
   );
-  return normalize(res.tracking_data);
+  return normalize(res?.tracking_data);
 }
 
 export async function trackByShipmentId(
   shipmentId: string,
 ): Promise<NormalizedTracking> {
-  const res = await srFetch<ShiprocketTrackingResponse>(
+  const res = await srFetch<any>(
     `/v1/external/courier/track/shipment/${encodeURIComponent(shipmentId)}`,
     { method: "GET" },
   );
-  return normalize(res.tracking_data);
+  // Shiprocket returns either { tracking_data } or, for some shipments,
+  // { [shipmentId]: { tracking_data } }. Handle both; fall back to empty.
+  const data = res?.tracking_data ?? res?.[shipmentId]?.tracking_data;
+  return normalize(data);
 }
 
 // Maps a Shiprocket textual status to our Order.status enum.
