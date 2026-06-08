@@ -86,6 +86,7 @@ export interface CourierOption {
   minWeight?: number;
   rtoCharges?: number;
   chargeableWeight?: number;
+  expectedPickup?: string;
 }
 
 // Returns ALL serviceable couriers for manual selection in the admin UI,
@@ -134,6 +135,7 @@ export async function listCouriers(
         typeof c.rto_charges === "number" ? c.rto_charges : undefined,
       chargeableWeight:
         typeof c.charge_weight === "number" ? c.charge_weight : undefined,
+      expectedPickup: c.pickup_availability || undefined,
     }))
     .sort((a, b) => {
       if (a.recommended !== b.recommended) return a.recommended ? -1 : 1;

@@ -1676,95 +1676,107 @@ export default function OrdersClient({
                       }
                       return (
                         <>
+                          <div className="flex items-start gap-2 bg-green-50 border border-green-100 rounded-lg px-4 py-2.5 mb-4">
+                            <span className="text-sm leading-none mt-0.5">
+                              🏅
+                            </span>
+                            <p className="text-[11px] text-green-800 leading-snug">
+                              <span className="font-bold">
+                                Best Performing couriers:
+                              </span>{" "}
+                              Recommended based on historical pickup &amp;
+                              delivery performance for this pincode.
+                            </p>
+                          </div>
                           <div className="text-xs text-gray-500 font-semibold mb-3">
                             {list.length} Couriers Found
                           </div>
-                          <div className="space-y-3">
-                            {list.map((c) => (
-                              <div
-                                key={c.courierCompanyId}
-                                className={`rounded-xl border p-4 ${
-                                  c.recommended
-                                    ? "border-primary/60 ring-1 ring-primary/20"
-                                    : "border-gray-100"
-                                }`}
-                              >
-                                {c.recommended && (
-                                  <span className="inline-block text-[9px] font-black uppercase tracking-wide bg-primary text-white px-2 py-0.5 rounded mb-2">
-                                    Recommended
-                                  </span>
-                                )}
-                                <div className="flex items-center justify-between gap-4 flex-wrap">
-                                  <div className="min-w-0">
-                                    <div className="font-bold text-gray-900">
-                                      {c.courierName}
-                                    </div>
-                                    <div className="text-[11px] text-gray-500 mt-0.5">
-                                      {c.mode}
-                                      {c.minWeight != null
-                                        ? ` · Min-weight: ${c.minWeight} Kg`
-                                        : ""}
-                                      {c.rtoCharges != null
-                                        ? ` · RTO: ₹${c.rtoCharges}`
-                                        : ""}
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-4 sm:gap-5 text-sm">
-                                    {c.rating != null && (
-                                      <div className="text-center">
-                                        <div className="text-[9px] uppercase text-gray-400 font-bold">
-                                          Rating
-                                        </div>
-                                        <div className="font-bold text-green-600">
-                                          {c.rating}
-                                        </div>
-                                      </div>
-                                    )}
-                                    <div className="text-center">
-                                      <div className="text-[9px] uppercase text-gray-400 font-bold">
-                                        Est. Delivery
-                                      </div>
-                                      <div className="font-semibold text-gray-700">
-                                        {c.etd ||
-                                          `${c.estimatedDeliveryDays || "?"} days`}
-                                      </div>
-                                    </div>
-                                    <div className="text-center">
-                                      <div className="text-[9px] uppercase text-gray-400 font-bold">
-                                        Charge Wt
-                                      </div>
-                                      <div className="font-semibold text-gray-700">
-                                        {c.chargeableWeight ??
-                                          srContext?.weightKg}{" "}
-                                        Kg
-                                      </div>
-                                    </div>
-                                    <div className="text-center">
-                                      <div className="text-[9px] uppercase text-gray-400 font-bold">
-                                        Charges
-                                      </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full min-w-[680px] text-sm border-separate border-spacing-y-2">
+                              <thead>
+                                <tr className="text-left text-[10px] font-black uppercase tracking-wide text-gray-400">
+                                  <th className="py-1 pr-3">Courier Partner</th>
+                                  <th className="py-1 px-3">Rating</th>
+                                  <th className="py-1 px-3">Expected Pickup</th>
+                                  <th className="py-1 px-3">
+                                    Estimated Delivery
+                                  </th>
+                                  <th className="py-1 px-3">Chargeable Wt</th>
+                                  <th className="py-1 px-3">Charges</th>
+                                  <th className="py-1 pl-3">Action</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {list.map((c) => (
+                                  <tr
+                                    key={c.courierCompanyId}
+                                    className={`rounded-lg ${
+                                      c.recommended
+                                        ? "outline outline-1 outline-primary/40 bg-primary/5"
+                                        : "border border-gray-100"
+                                    }`}
+                                  >
+                                    <td className="py-3 pr-3 pl-3 rounded-l-lg align-top">
+                                      {c.recommended && (
+                                        <span className="inline-block text-[8px] font-black uppercase tracking-wide bg-primary text-white px-1.5 py-0.5 rounded mb-1">
+                                          Recommended
+                                        </span>
+                                      )}
                                       <div className="font-bold text-gray-900">
-                                        ₹{c.rate}
+                                        {c.courierName}
                                       </div>
-                                    </div>
-                                    <button
-                                      onClick={() =>
-                                        handleAssignAwb(
-                                          srCourierModalOrder._id,
-                                          c.courierCompanyId,
-                                        )
-                                      }
-                                      disabled={srAssigningId !== null}
-                                      className="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-50 shrink-0"
-                                    >
-                                      {srAssigningId === c.courierCompanyId
-                                        ? "Shipping…"
-                                        : "Ship Now"}
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                                      <div className="text-[10px] text-gray-500">
+                                        {c.mode}
+                                        {c.minWeight != null
+                                          ? ` | Min-weight: ${c.minWeight} Kg`
+                                          : ""}
+                                      </div>
+                                      {c.rtoCharges != null && (
+                                        <div className="text-[10px] text-gray-400">
+                                          RTO Charges: ₹{c.rtoCharges}
+                                        </div>
+                                      )}
+                                    </td>
+                                    <td className="py-3 px-3 align-middle">
+                                      <RatingRing value={c.rating} />
+                                    </td>
+                                    <td className="py-3 px-3 align-middle text-gray-600">
+                                      {c.expectedPickup || "—"}
+                                    </td>
+                                    <td className="py-3 px-3 align-middle text-gray-600">
+                                      {c.etd ||
+                                        (c.estimatedDeliveryDays
+                                          ? `${c.estimatedDeliveryDays} days`
+                                          : "—")}
+                                    </td>
+                                    <td className="py-3 px-3 align-middle text-gray-600">
+                                      {c.chargeableWeight ??
+                                        srContext?.weightKg}{" "}
+                                      Kg
+                                    </td>
+                                    <td className="py-3 px-3 align-middle font-bold text-gray-900">
+                                      ₹{c.rate}
+                                    </td>
+                                    <td className="py-3 px-3 pr-3 rounded-r-lg align-middle">
+                                      <button
+                                        onClick={() =>
+                                          handleAssignAwb(
+                                            srCourierModalOrder._id,
+                                            c.courierCompanyId,
+                                          )
+                                        }
+                                        disabled={srAssigningId !== null}
+                                        className="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-50 whitespace-nowrap"
+                                      >
+                                        {srAssigningId === c.courierCompanyId
+                                          ? "Shipping…"
+                                          : "Ship Now"}
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
                           </div>
                         </>
                       );
@@ -1776,6 +1788,44 @@ export default function OrdersClient({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function RatingRing({ value }: { value?: number }) {
+  if (value == null || isNaN(value)) {
+    return <span className="text-gray-300 text-xs">—</span>;
+  }
+  const pct = Math.max(0, Math.min(1, value / 5));
+  const r = 16;
+  const circ = 2 * Math.PI * r;
+  const color = value >= 4 ? "#16a34a" : value >= 3 ? "#f59e0b" : "#ef4444";
+  return (
+    <div className="relative w-10 h-10">
+      <svg className="w-10 h-10 -rotate-90" viewBox="0 0 40 40">
+        <circle
+          cx="20"
+          cy="20"
+          r={r}
+          fill="none"
+          stroke="#e5e7eb"
+          strokeWidth="3"
+        />
+        <circle
+          cx="20"
+          cy="20"
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth="3"
+          strokeDasharray={circ}
+          strokeDashoffset={circ * (1 - pct)}
+          strokeLinecap="round"
+        />
+      </svg>
+      <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-gray-800">
+        {value}
+      </span>
     </div>
   );
 }

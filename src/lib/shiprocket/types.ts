@@ -91,6 +91,8 @@ export interface ShiprocketServiceabilityCourier {
   min_weight?: number;
   rto_charges?: number;
   charge_weight?: number;
+  pickup_availability?: string;
+  delivery_performance?: number;
 }
 
 export interface ShiprocketServiceabilityResponse {
