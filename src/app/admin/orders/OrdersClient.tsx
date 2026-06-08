@@ -1737,16 +1737,6 @@ export default function OrdersClient({
                                           RTO Charges: ₹{c.rtoCharges}
                                         </div>
                                       )}
-                                      {c.charges && (
-                                        <div className="text-[9px] text-blue-500 mt-0.5 font-mono">
-                                          rate ₹{c.charges.rate ?? "-"} · fr ₹
-                                          {c.charges.freightCharge ?? "-"} · cod ₹
-                                          {c.charges.codCharges ?? "-"} · cov ₹
-                                          {c.charges.coverageCharges ?? "-"} · oth ₹
-                                          {c.charges.otherCharges ?? "-"} · awt ₹
-                                          {c.charges.appliedWeightAmount ?? "-"}
-                                        </div>
-                                      )}
                                     </td>
                                     <td className="py-3 px-3 align-middle">
                                       <RatingRing value={c.rating} />
@@ -1765,8 +1755,18 @@ export default function OrdersClient({
                                         srContext?.weightKg}{" "}
                                       Kg
                                     </td>
-                                    <td className="py-3 px-3 align-middle font-bold text-gray-900">
-                                      ₹{c.rate}
+                                    <td className="py-3 px-3 align-middle">
+                                      <div className="font-bold text-gray-900">
+                                        ₹
+                                        {(
+                                          c.rate + (c.notifyCharges || 0)
+                                        ).toFixed(2)}
+                                      </div>
+                                      {c.notifyCharges ? (
+                                        <div className="text-[9px] text-gray-400">
+                                          ₹{c.rate} + ₹{c.notifyCharges} notify
+                                        </div>
+                                      ) : null}
                                     </td>
                                     <td className="py-3 px-3 pr-3 rounded-r-lg align-middle">
                                       <button

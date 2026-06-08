@@ -1420,6 +1420,33 @@ export default function SettingsClient({
                 </div>
 
                 <div>
+                  <FieldLabel>Notify Charges (₹ per shipment)</FieldLabel>
+                  <input
+                    type="number"
+                    className={INPUT_CLASS}
+                    value={settings.shiprocket?.notifyCharges ?? 5}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        shiprocket: {
+                          ...settings.shiprocket,
+                          notifyCharges:
+                            e.target.value === ""
+                              ? 0
+                              : Number(e.target.value),
+                        },
+                      })
+                    }
+                    placeholder="5"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Flat fee Shiprocket adds per shipment (buyer notification).
+                    Added to displayed courier rates so they match Shiprocket
+                    billing.
+                  </p>
+                </div>
+
+                <div>
                   <FieldLabel>Rate Calculation Mode</FieldLabel>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
                     {[

@@ -281,6 +281,10 @@ export async function listCouriersForOrder(
       cod: isCod,
       declaredValue: goodsValue,
     });
+    // Shiprocket bills a flat per-shipment "Notify Charges" on top of freight
+    // that the rate API doesn't return; surface it so totals match the dashboard.
+    const notify = Number(config.notifyCharges) || 0;
+    for (const c of couriers) c.notifyCharges = notify;
     return {
       ok: true,
       couriers,

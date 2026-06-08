@@ -112,6 +112,7 @@ const SettingsSchema = new Schema(
       defaultHeight: { type: Number, default: 5 },
       defaultHsnCode: { type: String, default: "" },
       pickupPincode: { type: String, default: "" },
+      notifyCharges: { type: Number, default: 5 },
     },
     whyChooseUs: {
       title: { type: String, default: "No Shortcuts.\nNo Compromises." },

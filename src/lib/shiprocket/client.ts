@@ -25,6 +25,7 @@ export interface ShiprocketConfig {
   defaultHeight: number;
   defaultHsnCode: string;
   pickupPincode: string;
+  notifyCharges: number;
 }
 
 export async function getShiprocketConfig(): Promise<ShiprocketConfig> {
@@ -66,6 +67,8 @@ export async function getShiprocketConfig(): Promise<ShiprocketConfig> {
     defaultHeight: sr.defaultHeight || 5,
     defaultHsnCode: sr.defaultHsnCode || "",
     pickupPincode: sr.pickupPincode || "",
+    notifyCharges:
+      typeof sr.notifyCharges === "number" ? sr.notifyCharges : 5,
   };
 }
 

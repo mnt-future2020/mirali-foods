@@ -8,9 +8,6 @@ import {
 
 const RATE_CACHE_TTL_MS = 5 * 60 * 1000;
 
-const num = (v: unknown): number | undefined =>
-  typeof v === "number" && !isNaN(v) ? v : undefined;
-
 export interface ServiceabilityArgs {
   pickupPincode: string;
   deliveryPincode: string;
@@ -90,16 +87,10 @@ export interface CourierOption {
   rtoCharges?: number;
   chargeableWeight?: number;
   expectedPickup?: string;
-  // Raw charge breakdown — used to diagnose rate differences vs Shiprocket UI.
-  charges?: {
-    rate?: number;
-    freightCharge?: number;
-    codCharges?: number;
-    coverageCharges?: number;
-    otherCharges?: number;
-    rtoCharges?: number;
-    appliedWeightAmount?: number;
-  };
+  // Flat per-shipment fee Shiprocket adds at billing ("Notify Charges") that
+  // the serviceability API does NOT return — surfaced so the displayed total
+  // matches what Shiprocket actually bills. Set per order in listCouriersForOrder.
+  notifyCharges?: number;
 }
 
 // Returns ALL serviceable couriers for manual selection in the admin UI,
@@ -149,15 +140,6 @@ export async function listCouriers(
       chargeableWeight:
         typeof c.charge_weight === "number" ? c.charge_weight : undefined,
       expectedPickup: c.pickup_availability || undefined,
-      charges: {
-        rate: num(c.rate),
-        freightCharge: num(c.freight_charge),
-        codCharges: num(c.cod_charges),
-        coverageCharges: num(c.coverage_charges),
-        otherCharges: num(c.other_charges),
-        rtoCharges: num(c.rto_charges),
-        appliedWeightAmount: num(c.applied_weight_amount),
-      },
     }))
     .sort((a, b) => {
       if (a.recommended !== b.recommended) return a.recommended ? -1 : 1;
