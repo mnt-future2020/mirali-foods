@@ -194,7 +194,7 @@ export default function SettingsClient({
   const [webhookUrl, setWebhookUrl] = useState("");
   useEffect(() => {
     if (typeof window !== "undefined") {
-      setWebhookUrl(`${window.location.origin}/api/shiprocket/webhook`);
+      setWebhookUrl(`${window.location.origin}/api/delivery-webhook`);
     }
   }, []);
 
@@ -1637,7 +1637,7 @@ export default function SettingsClient({
                       paste:
                     </p>
                     <code className="block bg-white px-2 py-1.5 rounded font-mono text-[11px] break-all">
-                      {webhookUrl || "https://your-domain/api/shiprocket/webhook"}
+                      {webhookUrl || "https://your-domain/api/delivery-webhook"}
                     </code>
                     <p className="mt-2">
                       Use the same secret here and in the Shiprocket dashboard.
