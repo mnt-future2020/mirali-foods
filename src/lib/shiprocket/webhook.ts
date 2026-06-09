@@ -35,7 +35,13 @@ export function mapEventToOrderUpdate(
   const update: OrderUpdateFromWebhook = {
     "shiprocket.lastSyncedAt": new Date(),
   };
-  if (payload.awb) update.awbNumber = payload.awb;
+  if (payload.awb) {
+    update.awbNumber = payload.awb;
+    // Set the tracking link straight from the webhook so the customer's
+    // "Track" button works automatically (no manual Refresh needed). This is
+    // Shiprocket's public tracking page for the AWB.
+    update.trackingLink = `https://shiprocket.co/tracking/${payload.awb}`;
+  }
   if (payload.courier_name) update.courierName = payload.courier_name;
   if (payload.etd) {
     const d = new Date(payload.etd);
