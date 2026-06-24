@@ -34,7 +34,7 @@ export default async function OrdersPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      <div className="flex-grow">
+      <div className="flex-grow flex flex-col">
         <OrdersListClient initialOrders={JSON.parse(JSON.stringify(orders))} />
       </div>
       <Footer />

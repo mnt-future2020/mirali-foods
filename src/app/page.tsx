@@ -6,7 +6,6 @@ import CategorySection from "@/components/CategorySection";
 import FeaturedProducts from "@/components/FeaturedProducts";
 import TrustSection from "@/components/TrustSection";
 import PromoSection from "@/components/PromoSection";
-import BannerRow from "@/components/BannerRow";
 import BeforeAfter from "@/components/BeforeAfter";
 import GoogleReviewsCarousel from "@/components/GoogleReviewsCarousel";
 import Footer from "@/components/Footer";
@@ -59,8 +58,6 @@ export default function Home() {
       <PromoSection />
 
       <TrustSection />
-
-      <BannerRow />
 
       <BeforeAfter />
 

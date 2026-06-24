@@ -96,7 +96,7 @@ export default function TrackOrderClient() {
 
     return (
         <main className="bg-gray-50/50 pb-10 md:pb-20">
-            <div className="pt-28 md:pt-40 max-w-5xl mx-auto px-4 sm:px-6">
+            <div className="pt-6 md:pt-10 max-w-5xl mx-auto px-4 sm:px-6">
 
                 {/* Header Section */}
                 <div className="text-center mb-6 md:mb-12">

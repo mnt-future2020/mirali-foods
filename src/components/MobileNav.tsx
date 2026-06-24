@@ -1,16 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Home, Store, CreditCard, Heart, User } from "lucide-react";
+import { Home, Store, ShoppingCart, CreditCard, Package } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useWishlist } from "@/context/WishlistContext";
-import { authClient } from "@/lib/auth-client";
+import { useCart } from "@/context/CartContext";
 import { useState, useEffect } from "react";
 
 export default function MobileNav() {
   const pathname = usePathname();
-  const { wishlistCount } = useWishlist();
-  const { data: session } = authClient.useSession();
+  const { cartCount } = useCart();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -27,11 +25,7 @@ export default function MobileNav() {
     return pathname?.startsWith(path);
   };
 
-  const profileHref = mounted && session
-    ? session.user.role === "admin"
-      ? "/admin/dashboard"
-      : "/profile"
-    : "/login";
+  const openCart = () => window.dispatchEvent(new Event("open-cart"));
 
   return (
     <div className="lg:hidden print:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-50 px-4 py-2">
@@ -58,6 +52,19 @@ export default function MobileNav() {
           <Store size={20} />
           <span className="text-[10px] uppercase font-bold">Shop</span>
         </Link>
+        <button
+          type="button"
+          onClick={openCart}
+          className="flex flex-col items-center gap-1 relative text-text-body hover:text-primary transition-colors"
+        >
+          <ShoppingCart size={20} />
+          {mounted && cartCount > 0 && (
+            <span className="absolute top-0 right-1 bg-primary text-white text-[8px] w-3 h-3 rounded-full flex items-center justify-center">
+              {cartCount}
+            </span>
+          )}
+          <span className="text-[10px] uppercase font-bold">Cart</span>
+        </button>
         <Link
           href="/checkout"
           className={`flex flex-col items-center gap-1 ${
@@ -70,31 +77,15 @@ export default function MobileNav() {
           <span className="text-[10px] uppercase font-bold">Checkout</span>
         </Link>
         <Link
-          href="/wishlist"
-          className={`flex flex-col items-center gap-1 relative ${
-            isActive("/wishlist")
-              ? "text-primary"
-              : "text-text-body hover:text-primary transition-colors"
-          }`}
-        >
-          <Heart size={20} />
-          {mounted && wishlistCount > 0 && (
-            <span className="absolute top-0 right-1 bg-primary text-white text-[8px] w-3 h-3 rounded-full flex items-center justify-center">
-              {wishlistCount}
-            </span>
-          )}
-          <span className="text-[10px] uppercase font-bold">Wishlist</span>
-        </Link>
-        <Link
-          href={profileHref}
+          href="/orders"
           className={`flex flex-col items-center gap-1 ${
-            isActive("/profile") || isActive("/login")
+            isActive("/orders")
               ? "text-primary"
               : "text-text-body hover:text-primary transition-colors"
           }`}
         >
-          <User size={20} />
-          <span className="text-[10px] uppercase font-bold">Account</span>
+          <Package size={20} />
+          <span className="text-[10px] uppercase font-bold">Orders</span>
         </Link>
       </div>
     </div>

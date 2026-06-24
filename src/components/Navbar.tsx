@@ -52,7 +52,13 @@ export default function Navbar() {
     setMounted(true);
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    // Allow other components (e.g. the mobile bottom nav) to open the cart drawer
+    const handleOpenCart = () => setIsCartOpen(true);
+    window.addEventListener("open-cart", handleOpenCart);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("open-cart", handleOpenCart);
+    };
   }, []);
 
   // Keep the header search dropdown in sync with the URL so a deep-linked
@@ -254,7 +260,7 @@ export default function Navbar() {
               <div className="flex items-center gap-1 sm:gap-2 md:gap-3 -mr-2 md:mr-0">
                 <Link
                   href={
-                    session
+                    mounted && session
                       ? session.user.role === "admin"
                         ? "/admin/dashboard"
                         : session.user.role === "customer"
@@ -283,7 +289,7 @@ export default function Navbar() {
                   type="button"
                   onClick={() => setIsCartOpen(true)}
                   aria-label={`Cart${mounted && cartCount > 0 ? ` (${cartCount} items)` : ""}`}
-                  className="relative inline-flex items-center justify-center h-11 w-11 md:h-10 md:w-10 rounded-full hover:bg-white/10 active:bg-white/15 hover:text-white/90 transition-colors"
+                  className="relative hidden lg:inline-flex items-center justify-center h-11 w-11 md:h-10 md:w-10 rounded-full hover:bg-white/10 active:bg-white/15 hover:text-white/90 transition-colors"
                 >
                   <ShoppingBag size={24} className="md:w-6 md:h-6" strokeWidth={2} />
                   {mounted && cartCount > 0 && (
@@ -363,8 +369,8 @@ export default function Navbar() {
           </div>
         </nav>
 
-        {/* Mobile Search */}
-        <div className="md:hidden bg-primary px-4 pb-2">
+        {/* Mobile Search — hidden on the Shop page, which has its own search bar */}
+        <div className={`${pathname === "/shop" ? "hidden" : "md:hidden"} bg-primary px-4 pb-2`}>
           <form
             onSubmit={handleSearch}
             className="flex items-center bg-white rounded overflow-hidden"
@@ -386,8 +392,19 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* Spacer for fixed header */}
-      <div className={isScrolled ? "h-[70px]" : "h-[100px] md:h-[150px] lg:h-[160px]"} />
+      {/* Spacer for fixed header. On the Shop page the mobile search bar is hidden,
+          so the header is shorter — use a tighter mobile spacer to avoid a white gap. */}
+      <div
+        className={
+          isScrolled
+            ? pathname === "/shop"
+              ? "h-[56px] md:h-[70px]"
+              : "h-[70px]"
+            : pathname === "/shop"
+              ? "h-[56px] md:h-[150px] lg:h-[160px]"
+              : "h-[100px] md:h-[150px] lg:h-[160px]"
+        }
+      />
 
       {/* Mobile Drawer */}
       <AnimatePresence>

@@ -5,8 +5,6 @@ import Image from "next/image";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import {
   MapPin,
   CreditCard,
@@ -25,6 +23,7 @@ import {
   Ticket,
   Package,
   IndianRupee,
+  Smartphone,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
@@ -33,6 +32,15 @@ import CouponInput from "@/components/CouponInput";
 import Link from "next/link";
 import { validateForm, checkoutSchema, FieldErrors } from "@/lib/validations";
 import FormError from "@/components/FormError";
+
+// UPI apps shown inside the "Online Payment (UPI)" card.
+// Real brand logos served from the Simple Icons CDN (browser-hotlink friendly).
+const UPI_APPS = [
+  { name: "PhonePe", logo: "https://cdn.simpleicons.org/phonepe/5F259F" },
+  { name: "Google Pay", logo: "/logos/googlepay.svg" },
+  { name: "Paytm", logo: "/logos/paytm.svg" },
+  { name: "Amazon Pay", logo: "/logos/amazonpay.svg" },
+];
 
 export default function CheckoutClient({
   initialSettings,
@@ -47,7 +55,9 @@ export default function CheckoutClient({
   const router = useRouter();
   const { cartItems, cartTotal, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("prepaid");
+  // Payment method: "upi" | "card" | "netbanking" all route to Razorpay (prepaid);
+  // "cod" is Cash on Delivery.
+  const [paymentMethod, setPaymentMethod] = useState("upi");
   const [showSummary, setShowSummary] = useState(false);
 
   const [address, setAddress] = useState({
@@ -82,6 +92,7 @@ export default function CheckoutClient({
   }, [session, status]);
 
   const itemsPrice = cartTotal;
+  const itemCount = cartItems.reduce((a, i) => a + i.qty, 0);
 
   // Server-resolved shipping quote (handles Shiprocket live vs flat fallback)
   const [shippingQuote, setShippingQuote] = useState<{
@@ -353,6 +364,8 @@ export default function CheckoutClient({
             name: address.fullName,
             email: address.email,
             contact: address.phone,
+            // Customer chose UPI on-page; open the Razorpay widget on the UPI tab
+            method: "upi",
           },
           theme: { color: "#007D71" },
           modal: {
@@ -408,7 +421,58 @@ export default function CheckoutClient({
         strategy="lazyOnload"
       />
 
-      <div className="pt-44 pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="pt-6 md:pt-10 pb-6 md:pb-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Product Summary (above the step progress) */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-6 max-w-2xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
+        >
+          <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3.5">
+            <div className="flex items-center gap-3 min-w-0">
+              {/* Stacked product thumbnails */}
+              <div className="flex -space-x-3 shrink-0">
+                {cartItems.slice(0, 4).map((item, i) => (
+                  <div
+                    key={`${item._id}-${item.uom || "default"}`}
+                    className="w-11 h-11 rounded-xl bg-white overflow-hidden relative ring-2 ring-white shadow-sm"
+                    style={{ zIndex: 4 - i }}
+                  >
+                    <Image
+                      src={item.image}
+                      alt={item.name}
+                      fill
+                      sizes="44px"
+                      className="object-cover"
+                    />
+                  </div>
+                ))}
+                {cartItems.length > 4 && (
+                  <div className="w-11 h-11 rounded-xl bg-primary/10 ring-2 ring-white shadow-sm flex items-center justify-center text-primary text-xs font-bold">
+                    +{cartItems.length - 4}
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-primary-dark">
+                  {itemCount} {itemCount === 1 ? "item" : "items"} in your order
+                </p>
+                <p className="text-xs text-gray-500 line-clamp-1">
+                  {cartItems.map((it) => it.name).join(", ")}
+                </p>
+              </div>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none mb-1">
+                Total
+              </p>
+              <p className="text-lg font-black text-primary">
+                ₹{totalPrice.toLocaleString()}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Enhanced Progress Indicator */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -696,21 +760,23 @@ export default function CheckoutClient({
               </div>
 
               <div className="p-5 md:p-8 space-y-4">
-                {/* Online Payment Option */}
+                {/* Online Payment (UPI) */}
                 <label
-                  className={`group flex items-start gap-4 p-6 rounded-xl border-2 cursor-pointer transition-all ${paymentMethod === "prepaid"
+                  className={`group block p-5 rounded-xl border-2 cursor-pointer transition-all ${
+                    paymentMethod === "upi"
                       ? "border-primary bg-primary/5 shadow-md ring-2 ring-primary/20"
                       : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
-                    }`}
+                  }`}
                 >
-                  <div className="flex items-center h-6">
+                  <div className="flex items-center gap-4">
                     <div
-                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${paymentMethod === "prepaid"
+                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                        paymentMethod === "upi"
                           ? "border-primary bg-primary"
                           : "border-gray-300 group-hover:border-gray-400"
-                        }`}
+                      }`}
                     >
-                      {paymentMethod === "prepaid" && (
+                      {paymentMethod === "upi" && (
                         <motion.div
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
@@ -718,89 +784,48 @@ export default function CheckoutClient({
                         />
                       )}
                     </div>
-                  </div>
-                  <div className="flex-grow">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CreditCard className="h-5 w-5 text-primary" />
-                      <p className="font-bold text-primary-dark text-lg">
-                        Online Payment
+                    <div className="flex items-center gap-2 flex-grow">
+                      <Smartphone className="h-5 w-5 text-primary" />
+                      <p className="font-bold text-primary-dark text-base md:text-lg">
+                        Online Payment (UPI)
                       </p>
-                      <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                        Recommended
-                      </span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-3">
-                      Pay securely using Cards, UPI, Net Banking & more
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg flex items-center gap-1.5">
-                        💳 Cards
-                      </span>
-                      <span className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg flex items-center gap-1.5">
-                        📱 UPI
-                      </span>
-                      <span className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg flex items-center gap-1.5">
-                        🏦 Net Banking
-                      </span>
-                      <span className="px-3 py-1.5 bg-white border border-gray-200 text-gray-700 text-xs font-medium rounded-lg flex items-center gap-1.5">
-                        💰 Wallets
-                      </span>
-                    </div>
+                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                      Recommended
+                    </span>
+                  </div>
+
+                  {/* UPI app icons */}
+                  <div className="mt-4 grid grid-cols-4 gap-2 sm:gap-3">
+                    {UPI_APPS.map((app) => (
+                      <div
+                        key={app.name}
+                        className="flex flex-col items-center gap-1.5 bg-white border border-gray-100 rounded-xl py-3 px-1 shadow-sm"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={app.logo}
+                          alt={`${app.name} logo`}
+                          loading="lazy"
+                          className="h-6 sm:h-7 w-auto max-w-full object-contain"
+                        />
+                        <span className="text-[10px] sm:text-[11px] font-medium text-gray-600 text-center leading-tight">
+                          {app.name}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                   <input
                     type="radio"
                     name="payment"
                     className="hidden"
-                    checked={paymentMethod === "prepaid"}
-                    onChange={() => setPaymentMethod("prepaid")}
+                    checked={paymentMethod === "upi"}
+                    onChange={() => setPaymentMethod("upi")}
                   />
                 </label>
-
-
               </div>
             </motion.div>
 
-            {/* Security Badges */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="grid grid-cols-1 sm:grid-cols-3 gap-4"
-            >
-              <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
-                <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <ShieldCheck size={20} className="text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-green-900">
-                    SSL Encrypted
-                  </p>
-                  <p className="text-xs text-green-700">100% Secure</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
-                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <CheckCircle2 size={20} className="text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-blue-900">
-                    Verified Seller
-                  </p>
-                  <p className="text-xs text-blue-700">Trusted Origin</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
-                <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <ShieldCheck size={20} className="text-white" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-purple-900">
-                    Safe Payment
-                  </p>
-                  <p className="text-xs text-purple-700">PCI Compliant</p>
-                </div>
-              </div>
-            </motion.div>
           </div>
 
           {/* Right Column - Order Summary */}
@@ -1211,10 +1236,8 @@ export default function CheckoutClient({
         </AnimatePresence>
       </div>
 
-      {/* Spacer for Floating Summary on Mobile */}
-      <div className="h-32 lg:hidden" />
-
-      <Footer />
+      {/* Minimal breathing space before the footer on mobile */}
+      <div className="h-4 lg:hidden" />
     </main>
   );
 }

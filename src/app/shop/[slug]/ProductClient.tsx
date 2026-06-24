@@ -113,7 +113,7 @@ export default function ProductClient({
     <main className="min-h-screen bg-gradient-to-b from-white to-secondary/30 selection:bg-primary selection:text-white">
       <Navbar />
 
-      <div className="pt-4 md:pt-44 pb-10 md:pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="pt-4 md:pt-10 pb-10 md:pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumbs */}
         <nav className="flex items-center gap-2 text-[10px] font-bold text-gray-500 mb-8 uppercase tracking-wider">
           <a href="/" className="hover:text-primary transition-colors">

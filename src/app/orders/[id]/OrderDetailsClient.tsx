@@ -67,7 +67,7 @@ export default function OrderDetailsClient({
 
   return (
     <main className="min-h-screen bg-gray-50 pb-20 overflow-hidden">
-      <div className="pt-44 md:pt-44 max-w-5xl mx-auto px-4 sm:px-6">
+      <div className="pt-6 md:pt-10 max-w-5xl mx-auto px-4 sm:px-6">
         <Link
           href="/orders"
           className="inline-flex items-center gap-2 text-gray-400 font-bold text-[10px] md:text-xs uppercase tracking-widest hover:text-primary transition-colors mb-6 md:mb-8"

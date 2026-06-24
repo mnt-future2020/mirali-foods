@@ -21,7 +21,7 @@ export default function WishlistClient() {
 
   if (wishlistItems.length === 0) {
     return (
-      <div className="min-h-screen bg-[#F5F5F5] pt-4 md:pt-32">
+      <div className="min-h-screen bg-[#F5F5F5] pt-4 md:pt-10">
         <div className="max-w-4xl mx-auto px-4 py-20 text-center">
           <div className="w-32 h-32 bg-[#F5F5F5]/30 rounded-full flex items-center justify-center mx-auto mb-8">
             <Heart size={48} className="text-[#007D71]/30" />

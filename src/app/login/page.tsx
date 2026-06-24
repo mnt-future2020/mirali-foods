@@ -65,15 +65,15 @@ export default function LoginPage() {
       >
         <div className="glass-card p-6 md:p-10">
           <div className="text-center mb-6 md:mb-10">
-            <Link href="/" className="inline-flex items-center justify-center gap-0 mb-4 md:mb-6">
+            <Link href="/" className="flex w-full items-center justify-center gap-2 mb-4 md:mb-6">
               {settings?.logo ? (
-                <div className="h-12 md:h-16 w-28 md:w-36 relative">
+                <div className="h-12 md:h-16 w-28 md:w-36 relative flex-shrink-0">
                   <Image
                     src={settings.logo}
                     alt={settings.shopName || "Miraly Foods"}
                     fill
                     sizes="(max-width: 768px) 112px, 144px"
-                    className="object-contain object-right"
+                    className="object-contain"
                     priority
                   />
                 </div>
@@ -83,8 +83,8 @@ export default function LoginPage() {
                 </span>
               )}
               {settings?.logo2 && (
-                <div className="h-12 md:h-16 w-28 md:w-36 relative flex-shrink-0">
-                  <Image src={settings.logo2} alt="Secondary Logo" fill sizes="(max-width: 768px) 112px, 144px" className="object-contain object-left" />
+                <div className="h-12 md:h-16 w-12 md:w-16 relative flex-shrink-0">
+                  <Image src={settings.logo2} alt="Secondary Logo" fill sizes="(max-width: 768px) 48px, 64px" className="object-contain" />
                 </div>
               )}
             </Link>

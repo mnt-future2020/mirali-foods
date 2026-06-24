@@ -174,8 +174,8 @@ export default function ShopClient({
       </section>
 
       {/* Search Bar (below hero) */}
-      <div className="container-custom py-6">
-        <div className="relative max-w-md">
+      <div className="container-custom py-3 md:py-6">
+        <div className="relative max-w-md w-full">
           <SearchIcon
             className="absolute left-4 top-1/2 -translate-y-1/2 text-text-body/40"
             size={16}
@@ -194,8 +194,8 @@ export default function ShopClient({
       </div>
 
       {/* Main Layout */}
-      <div className="container-custom py-8 md:py-16">
-        <div className="flex flex-col lg:flex-row gap-12">
+      <div className="container-custom py-3 md:py-16">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-12">
           {/* Sidebar */}
           <aside className="hidden lg:flex flex-col gap-10 lg:w-1/4 flex-shrink-0">
             {/* Product Categories */}
@@ -377,9 +377,9 @@ export default function ShopClient({
           </aside>
 
           {/* Main Content */}
-          <div className="lg:w-3/4 flex-grow flex flex-col gap-8">
+          <div className="lg:w-3/4 flex-grow flex flex-col gap-4 md:gap-8">
             {/* Mobile Categories Toggle */}
-            <div className="lg:hidden flex flex-col gap-4">
+            <div className="lg:hidden flex flex-col gap-3">
               <button
                 onClick={() => setShowMobileCategories(!showMobileCategories)}
                 className="w-full flex items-center justify-between bg-primary text-white px-6 py-3 rounded font-bold uppercase tracking-wider shadow-md"

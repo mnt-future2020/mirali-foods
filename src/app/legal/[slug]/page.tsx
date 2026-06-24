@@ -60,7 +60,7 @@ export default async function LegalPage({ params }: PageProps) {
       <Navbar />
 
       {/* Hero Section */}
-      <div className="pt-28 md:pt-44 pb-6 md:pb-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary/5 to-accent/5">
+      <div className="pt-8 md:pt-12 pb-6 md:pb-12 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary/5 to-accent/5">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 bg-white rounded-2xl shadow-lg mb-4 md:mb-6">
             <PageIcon className="text-primary" size={28} />

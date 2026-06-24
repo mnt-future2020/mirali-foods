@@ -98,7 +98,7 @@ export default function ProfileClient() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-white to-secondary/30 flex flex-col">
-      <div className="flex-grow pt-44 md:pt-44 pb-20 max-w-4xl mx-auto px-4 sm:px-6 w-full text-wrap overflow-hidden">
+      <div className="flex-grow pt-6 md:pt-10 pb-20 max-w-4xl mx-auto px-4 sm:px-6 w-full text-wrap overflow-hidden">
         {/* Header Section */}
         <div className="mb-8 md:mb-12">
           <span className="text-primary font-bold uppercase tracking-[0.3em] text-[10px] mb-2 md:mb-3 block">
