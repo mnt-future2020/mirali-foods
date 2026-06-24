@@ -202,7 +202,7 @@ export default function Footer() {
               href="https://mntfuture.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-white hover:text-primary transition-colors"
+              className="text-white hover:text-accent hover:underline transition-colors"
             >
               Developed by MnT
             </a>
