@@ -198,7 +198,14 @@ export default function Footer() {
           </p>
           <p>
             Powered by{" "}
-            <span className="text-white">Developed by MnT</span>
+            <a
+              href="https://mntfuture.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white hover:text-primary transition-colors"
+            >
+              Developed by MnT
+            </a>
           </p>
         </div>
       </div>
