@@ -197,14 +197,14 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} Miraly Foods. All Rights Reserved.
           </p>
           <p>
-            Powered by{" "}
+           Developed by{" "}
             <a
               href="https://mntfuture.com/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-white hover:text-accent hover:underline transition-colors"
             >
-              Developed by MnT
+               MnT
             </a>
           </p>
         </div>
