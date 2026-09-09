@@ -9,7 +9,12 @@ import PromoSection from "@/components/PromoSection";
 import BeforeAfter from "@/components/BeforeAfter";
 import GoogleReviewsCarousel from "@/components/GoogleReviewsCarousel";
 import Footer from "@/components/Footer";
-import { getHeroSlides, getCategories, getFeaturedProducts } from "@/lib/data";
+import {
+  getHeroSlides,
+  getCategories,
+  getFeaturedProducts,
+  getSettings,
+} from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +26,11 @@ async function HeroSection() {
 async function CategoriesSection() {
   const categories = await getCategories();
   return <CategorySection initialCategories={categories} />;
+}
+
+async function WhyShopSection() {
+  const settings = await getSettings();
+  return <TrustSection trustSection={settings?.trustSection} />;
 }
 
 async function ProductsSection() {
@@ -57,7 +67,11 @@ export default function Home() {
 
       <PromoSection />
 
-      <TrustSection />
+      <Suspense
+        fallback={<div className="h-96 bg-gray-50 animate-pulse" />}
+      >
+        <WhyShopSection />
+      </Suspense>
 
       <BeforeAfter />
 

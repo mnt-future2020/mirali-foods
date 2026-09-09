@@ -2,10 +2,17 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { ShoppingCart, Eye, Heart, ArrowRight, Minus, Plus } from "lucide-react";
+import { Heart, ArrowRight, Minus, Plus, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import {
+  useBuyNow,
+  useVariantSelection,
+  useQuantitySelection,
+  cartPayload,
+  formatUom,
+} from "@/lib/useProductCard";
 import { useState } from "react";
 
 export default function FeaturedProducts({
@@ -21,11 +28,10 @@ export default function FeaturedProducts({
 }) {
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const buyNow = useBuyNow();
+  const { getVariant, selectVariant, getPrice } = useVariantSelection();
+  const { getQty, setQty } = useQuantitySelection();
   const [products] = useState<any[]>(initialProducts);
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const getQty = (id: string) => quantities[id] || 1;
-  const setQty = (id: string, val: number) =>
-    setQuantities((prev) => ({ ...prev, [id]: Math.max(1, val) }));
 
   if (products.length === 0) return null;
 
@@ -67,115 +73,148 @@ export default function FeaturedProducts({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.05 }}
-              className="group bg-white rounded-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-all duration-300"
+              className="group bg-white rounded-3xl p-3 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
             >
-              <Link href={`/shop/${product.slug}`} className="relative aspect-square overflow-hidden bg-gray-50 block">
-                <Image
-                  src={
-                    product.images && product.images[0]
-                      ? product.images[0]
-                      : "https://via.placeholder.com/400x400?text=No+Image"
-                  }
-                  alt={product.name}
-                  fill
-                  sizes="(max-width: 768px) 50vw, 25vw"
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  priority={i < 2}
-                />
+              <div className="relative">
+                <Link
+                  href={`/shop/${product.slug}`}
+                  className="block relative aspect-square rounded-2xl overflow-hidden bg-gray-50"
+                >
+                  <Image
+                    src={
+                      product.images && product.images[0]
+                        ? product.images[0]
+                        : "https://via.placeholder.com/400x400?text=No+Image"
+                    }
+                    alt={product.name}
+                    fill
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                    priority={i < 2}
+                  />
+                </Link>
 
-                {/* Discount Badge */}
-                {product.mrp && product.mrp > product.price && (
-                  <div className="absolute top-3 left-3 bg-primary text-white px-2 py-1 rounded text-[10px] font-bold">
-                    {Math.round(
-                      ((product.mrp - product.price) / product.mrp) * 100
-                    )}
-                    % OFF
-                  </div>
+                {/* Badge */}
+                {(product.badge ||
+                  (product.mrp && product.mrp > product.price)) && (
+                  <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full text-[11px] font-semibold text-text-heading shadow-sm">
+                    {product.badge ||
+                      `${Math.round(
+                        ((product.mrp - product.price) / product.mrp) * 100,
+                      )}% OFF`}
+                  </span>
                 )}
 
-                {/* Hover Actions (always visible on mobile) */}
-                <div className="absolute top-3 right-3 md:top-4 md:right-4 flex flex-col gap-2 opacity-100 translate-x-0 md:opacity-0 md:translate-x-4 transition-all duration-300 md:group-hover:opacity-100 md:group-hover:translate-x-0">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (isInWishlist(product._id)) {
-                        removeFromWishlist(product._id);
-                      } else {
-                        addToWishlist(product);
-                      }
-                    }}
-                    className={`p-2 rounded-full shadow-sm transition-colors ${
-                      isInWishlist(product._id)
-                        ? "bg-primary text-white"
-                        : "bg-white text-text-body hover:bg-primary hover:text-white"
-                    }`}
-                    aria-label="Add to wishlist"
-                  >
-                    <Heart
-                      size={18}
-                      fill={isInWishlist(product._id) ? "currentColor" : "none"}
-                    />
-                  </button>
-                  <span
-                    className="hidden md:flex items-center justify-center bg-white p-2 rounded-full text-text-body group-hover:bg-primary group-hover:text-white transition-colors shadow-sm"
-                    aria-label="Quick view"
-                  >
-                    <Eye size={18} />
-                  </span>
-                </div>
-
-              </Link>
-
-              {/* Quantity and Add to Cart Row */}
-              <div className="flex gap-2 p-4 pb-0">
-                <div className="flex-1 flex items-center justify-between bg-gray-50 rounded-sm px-4 py-2 border border-gray-100">
-                  <button
-                    onClick={() => setQty(product._id, getQty(product._id) - 1)}
-                    className="text-text-body hover:text-primary transition-colors h-full flex items-center"
-                  >
-                    <Minus size={14} strokeWidth={3} />
-                  </button>
-                  <span className="text-sm font-bold text-text-heading mx-2">
-                    {getQty(product._id)}
-                  </span>
-                  <button
-                    onClick={() => setQty(product._id, getQty(product._id) + 1)}
-                    className="text-text-body hover:text-primary transition-colors h-full flex items-center"
-                  >
-                    <Plus size={14} strokeWidth={3} />
-                  </button>
-                </div>
+                {/* Wishlist */}
                 <button
                   onClick={() => {
-                    addToCart(product, getQty(product._id));
-                    setQty(product._id, 1);
+                    if (isInWishlist(product._id)) {
+                      removeFromWishlist(product._id);
+                    } else {
+                      addToWishlist(product);
+                    }
                   }}
-                  className="bg-primary text-white p-3 rounded-sm hover:bg-primary-dark transition-colors shadow-md flex items-center justify-center aspect-square"
+                  className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center transition-colors hover:bg-gray-50"
+                  aria-label="Add to wishlist"
                 >
-                  <ShoppingCart size={18} />
+                  <Heart
+                    size={17}
+                    className={
+                      isInWishlist(product._id)
+                        ? "text-red-500"
+                        : "text-gray-400"
+                    }
+                    fill={isInWishlist(product._id) ? "currentColor" : "none"}
+                  />
                 </button>
               </div>
 
-              <Link href={`/shop/${product.slug}`} className="block px-4 pt-3 pb-4 text-center">
+              <div className="flex flex-col flex-1 px-2 pt-4 pb-1">
                 {product.category && (
-                  <p className="text-[10px] text-primary uppercase font-bold tracking-widest mb-1">
+                  <p className="text-xs text-primary font-medium mb-1">
                     {typeof product.category === "object"
                       ? product.category.name
                       : product.category}
                   </p>
                 )}
-                <h3 className="text-sm font-sans font-semibold text-text-heading mb-2 line-clamp-1 group-hover:text-primary transition-colors">
-                  {product.name}
-                </h3>
-                <p className="text-primary font-extrabold font-number text-base md:text-lg leading-none">
-                  ₹{product.price}
+                <Link href={`/shop/${product.slug}`}>
+                  <h3 className="text-sm md:text-base font-semibold text-text-heading leading-snug line-clamp-2 hover:text-primary transition-colors">
+                    {product.name}
+                  </h3>
+                </Link>
+                <p className="mt-1.5 text-sm md:text-base font-bold font-number text-text-heading">
+                  ₹{getPrice(product)}
                   {product.mrp && product.mrp > product.price && (
-                    <span className="text-text-body/50 text-xs md:text-sm line-through ml-2 font-medium">
+                    <span className="text-text-body/50 text-xs line-through ml-2 font-medium">
                       ₹{product.mrp}
                     </span>
                   )}
                 </p>
-              </Link>
+
+                {/* Size / Weight */}
+                {product.variants && product.variants.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {product.variants.map((v: any, vi: number) => (
+                      <button
+                        key={vi}
+                        onClick={() => selectVariant(product._id, v.uom)}
+                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wide border transition-colors ${
+                          getVariant(product)?.uom === v.uom
+                            ? "bg-primary border-primary text-white"
+                            : "bg-white border-gray-200 text-text-body hover:border-primary/50"
+                        }`}
+                      >
+                        {formatUom(v.uom)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Quantity */}
+                <p className="mt-3 text-[10px] font-bold text-primary uppercase tracking-wider">
+                  Quantity:
+                </p>
+                <div className="mt-1.5 flex items-center gap-2">
+                  <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 w-[104px] flex-shrink-0">
+                    <button
+                      onClick={() => setQty(product._id, getQty(product._id) - 1)}
+                      className="text-gray-500 hover:text-primary transition-colors"
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus size={14} strokeWidth={3} />
+                    </button>
+                    <span className="text-sm font-bold text-text-heading">
+                      {getQty(product._id)}
+                    </span>
+                    <button
+                      onClick={() => setQty(product._id, getQty(product._id) + 1)}
+                      className="text-gray-500 hover:text-primary transition-colors"
+                      aria-label="Increase quantity"
+                    >
+                      <Plus size={14} strokeWidth={3} />
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => {
+                      addToCart(cartPayload(product, getVariant(product)), getQty(product._id));
+                      setQty(product._id, 1);
+                    }}
+                    className="flex-1 min-w-0 flex items-center justify-center gap-1.5 bg-primary text-white rounded-lg py-2 text-[10px] font-bold uppercase tracking-wide hover:bg-primary-dark transition-colors"
+                  >
+                    <ShoppingCart size={13} />
+                    <span className="truncate">Add to Cart</span>
+                  </button>
+                </div>
+
+                <button
+                  onClick={() =>
+                    buyNow(product, getQty(product._id), getVariant(product))
+                  }
+                  className="mt-4 w-full bg-gray-900 text-white py-3 rounded-full text-sm font-semibold hover:bg-black transition-colors"
+                >
+                  Buy Now
+                </button>
+              </div>
             </motion.div>
           ))}
         </div>

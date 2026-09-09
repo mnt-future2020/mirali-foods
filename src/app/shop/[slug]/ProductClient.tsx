@@ -297,10 +297,10 @@ export default function ProductClient({
                 disabled={isOutOfStock}
                 className={`w-full py-4 rounded-xl font-bold uppercase tracking-wide text-sm transition-all duration-300 flex items-center justify-center gap-2 ${isOutOfStock
                   ? "bg-gray-100 text-gray-300 cursor-not-allowed"
-                  : "bg-accent text-white hover:bg-accent-hover shadow-md hover:shadow-lg"
+                  : "bg-gray-900 text-white hover:bg-black shadow-md hover:shadow-lg"
                   }`}
               >
-                <Zap size={18} fill={isOutOfStock ? "gray" : "white"} />
+                <Zap size={18} fill={isOutOfStock ? "gray" : "currentColor"} />
                 {isOutOfStock ? "Out of Stock" : "Buy It Now"}
               </button>
             </div>

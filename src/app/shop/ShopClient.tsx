@@ -6,10 +6,8 @@ import {
   Filter,
   Search as SearchIcon,
   ChevronDown,
-  ShoppingCart,
   Loader2,
   Heart,
-  Eye,
   X,
   LayoutGrid,
   List,
@@ -17,11 +15,19 @@ import {
   ChevronRight,
   Minus,
   Plus,
+  ShoppingCart,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import {
+  useBuyNow,
+  useVariantSelection,
+  useQuantitySelection,
+  cartPayload,
+  formatUom,
+} from "@/lib/useProductCard";
 import { useSearchParams } from "next/navigation";
 
 export default function ShopClient({
@@ -50,6 +56,9 @@ export default function ShopClient({
   );
   const urlCategory = resolveCategory(searchParams.get("category") || "");
   const { addToCart } = useCart();
+  const buyNow = useBuyNow();
+  const { getVariant, selectVariant, getPrice } = useVariantSelection();
+  const { getQty, setQty } = useQuantitySelection();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
 
   const [products] = useState<any[]>(initialProducts);
@@ -67,10 +76,6 @@ export default function ShopClient({
   const [currentPage, setCurrentPage] = useState(1);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showMobileCategories, setShowMobileCategories] = useState(false);
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const getQty = (id: string) => quantities[id] || 1;
-  const setQty = (id: string, val: number) =>
-    setQuantities((prev) => ({ ...prev, [id]: Math.max(1, val) }));
   const itemsPerPage = 12;
 
   useEffect(() => {
@@ -558,12 +563,12 @@ export default function ShopClient({
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ delay: idx * 0.03 }}
-                        className="group bg-white rounded-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-all duration-300"
+                        className="group bg-white rounded-3xl p-3 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
                       >
-                        <div className="relative aspect-square overflow-hidden bg-gray-50">
+                        <div className="relative">
                           <Link
                             href={`/shop/${p.slug || p._id}`}
-                            className="absolute inset-0 block"
+                            className="block relative aspect-square rounded-2xl overflow-hidden bg-gray-50"
                           >
                             <Image
                               src={
@@ -573,122 +578,131 @@ export default function ShopClient({
                               alt={p.name}
                               fill
                               sizes="(max-width: 768px) 50vw, 33vw"
-                              className="object-cover transition-transform duration-500 group-hover:scale-110"
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
                               priority={idx < 4}
                             />
                           </Link>
 
-                          {/* Discount Badge */}
-                          {p.mrp && p.mrp > p.price && (
-                            <div className="absolute top-3 left-3 bg-primary text-white px-2 py-1 rounded text-[10px] font-bold">
-                              {Math.round(
-                                ((p.mrp - p.price) / p.mrp) * 100
-                              )}
-                              % OFF
-                            </div>
+                          {/* Badge */}
+                          {(p.badge || (p.mrp && p.mrp > p.price)) && (
+                            <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full text-[11px] font-semibold text-text-heading shadow-sm">
+                              {p.badge ||
+                                `${Math.round(
+                                  ((p.mrp - p.price) / p.mrp) * 100,
+                                )}% OFF`}
+                            </span>
                           )}
 
-                          {/* Hover Actions (always visible on mobile) */}
-                          <div className="absolute top-3 right-3 md:top-4 md:right-4 flex flex-col gap-2 opacity-100 translate-x-0 md:opacity-0 md:translate-x-4 transition-all duration-300 md:group-hover:opacity-100 md:group-hover:translate-x-0">
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                if (isInWishlist(p._id)) {
-                                  removeFromWishlist(p._id);
-                                } else {
-                                  addToWishlist(p);
-                                }
-                              }}
-                              className={`p-2 rounded-full shadow-sm transition-colors ${
-                                isInWishlist(p._id)
-                                  ? "bg-primary text-white"
-                                  : "bg-white text-text-body hover:bg-primary hover:text-white"
-                              }`}
-                              aria-label="Add to wishlist"
-                            >
-                              <Heart
-                                size={18}
-                                fill={
-                                  isInWishlist(p._id) ? "currentColor" : "none"
-                                }
-                              />
-                            </button>
-                            <Link
-                              href={`/shop/${p.slug || p._id}`}
-                              className="hidden md:flex items-center justify-center bg-white p-2 rounded-full text-text-body hover:bg-primary hover:text-white transition-colors shadow-sm"
-                              aria-label="Quick view"
-                            >
-                              <Eye size={18} />
-                            </Link>
-                          </div>
-
-                        </div>
-
-                        {/* Quantity and Add to Cart Row */}
-                        <div className="flex gap-2 p-4 pb-0">
-                          <div className="flex-1 flex items-center justify-between bg-gray-50 rounded-sm px-4 py-2 border border-gray-100">
-                            <button
-                              onClick={() => setQty(p._id, getQty(p._id) - 1)}
-                              className="text-text-body hover:text-primary transition-colors h-full flex items-center"
-                            >
-                              <Minus size={14} strokeWidth={3} />
-                            </button>
-                            <span className="text-sm font-bold text-text-heading mx-2">
-                              {getQty(p._id)}
-                            </span>
-                            <button
-                              onClick={() => setQty(p._id, getQty(p._id) + 1)}
-                              className="text-text-body hover:text-primary transition-colors h-full flex items-center"
-                            >
-                              <Plus size={14} strokeWidth={3} />
-                            </button>
-                          </div>
+                          {/* Wishlist */}
                           <button
                             onClick={() => {
-                              if (p.variants && p.variants.length > 0) {
-                                const bestVariant = p.variants[0];
-                                addToCart(
-                                  {
-                                    ...p,
-                                    price: bestVariant.price,
-                                    uom: bestVariant.uom,
-                                  },
-                                  getQty(p._id)
-                                );
+                              if (isInWishlist(p._id)) {
+                                removeFromWishlist(p._id);
                               } else {
-                                addToCart(p, getQty(p._id));
+                                addToWishlist(p);
                               }
-                              setQty(p._id, 1);
                             }}
-                            className="bg-primary text-white p-3 rounded-sm hover:bg-primary-dark transition-colors shadow-md flex items-center justify-center aspect-square"
+                            className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center transition-colors hover:bg-gray-50"
+                            aria-label="Add to wishlist"
                           >
-                            <ShoppingCart size={18} />
+                            <Heart
+                              size={17}
+                              className={
+                                isInWishlist(p._id)
+                                  ? "text-red-500"
+                                  : "text-gray-400"
+                              }
+                              fill={isInWishlist(p._id) ? "currentColor" : "none"}
+                            />
                           </button>
                         </div>
 
-                        <Link
-                          href={`/shop/${p.slug || p._id}`}
-                          className="block p-4 text-center"
-                        >
+                        <div className="flex flex-col flex-1 px-2 pt-4 pb-1">
                           {p.category && (
-                            <p className="text-[10px] text-primary uppercase font-bold tracking-widest mb-1">
+                            <p className="text-xs text-primary font-medium mb-1">
                               {typeof p.category === "object"
                                 ? p.category.name
                                 : p.category}
                             </p>
                           )}
-                          <h3 className="text-sm font-sans font-semibold text-text-heading mb-2 line-clamp-1 group-hover:text-primary transition-colors">
-                            {p.name}
-                          </h3>
-                          <p className="text-primary font-bold">
-                            ₹{p.price}
+                          <Link href={`/shop/${p.slug || p._id}`}>
+                            <h3 className="text-sm md:text-base font-semibold text-text-heading leading-snug line-clamp-2 hover:text-primary transition-colors">
+                              {p.name}
+                            </h3>
+                          </Link>
+                          <p className="mt-1.5 text-sm md:text-base font-bold font-number text-text-heading">
+                            ₹{getPrice(p)}
                             {p.mrp && p.mrp > p.price && (
-                              <span className="text-text-body/50 text-xs line-through ml-2 font-normal">
+                              <span className="text-text-body/50 text-xs line-through ml-2 font-medium">
                                 ₹{p.mrp}
                               </span>
                             )}
                           </p>
-                        </Link>
+
+                          {/* Size / Weight */}
+                          {p.variants && p.variants.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-1.5">
+                              {p.variants.map((v: any, vi: number) => (
+                                <button
+                                  key={vi}
+                                  onClick={() => selectVariant(p._id, v.uom)}
+                                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wide border transition-colors ${
+                                    getVariant(p)?.uom === v.uom
+                                      ? "bg-primary border-primary text-white"
+                                      : "bg-white border-gray-200 text-text-body hover:border-primary/50"
+                                  }`}
+                                >
+                                  {formatUom(v.uom)}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Quantity */}
+                          <p className="mt-3 text-[10px] font-bold text-primary uppercase tracking-wider">
+                            Quantity:
+                          </p>
+                          <div className="mt-1.5 flex items-center gap-2">
+                            <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 w-[104px] flex-shrink-0">
+                              <button
+                                onClick={() => setQty(p._id, getQty(p._id) - 1)}
+                                className="text-gray-500 hover:text-primary transition-colors"
+                                aria-label="Decrease quantity"
+                              >
+                                <Minus size={14} strokeWidth={3} />
+                              </button>
+                              <span className="text-sm font-bold text-text-heading">
+                                {getQty(p._id)}
+                              </span>
+                              <button
+                                onClick={() => setQty(p._id, getQty(p._id) + 1)}
+                                className="text-gray-500 hover:text-primary transition-colors"
+                                aria-label="Increase quantity"
+                              >
+                                <Plus size={14} strokeWidth={3} />
+                              </button>
+                            </div>
+                            <button
+                              onClick={() => {
+                                addToCart(cartPayload(p, getVariant(p)), getQty(p._id));
+                                setQty(p._id, 1);
+                              }}
+                              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 bg-primary text-white rounded-lg py-2 text-[10px] font-bold uppercase tracking-wide hover:bg-primary-dark transition-colors"
+                            >
+                              <ShoppingCart size={13} />
+                              <span className="truncate">Add to Cart</span>
+                            </button>
+                          </div>
+
+                          <button
+                            onClick={() =>
+                              buyNow(p, getQty(p._id), getVariant(p))
+                            }
+                            className="mt-4 w-full bg-gray-900 text-white py-3 rounded-full text-sm font-semibold hover:bg-black transition-colors"
+                          >
+                            Buy Now
+                          </button>
+                        </div>
                       </motion.div>
                     ))}
                   </AnimatePresence>

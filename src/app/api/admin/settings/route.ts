@@ -156,6 +156,15 @@ export async function POST(req: Request) {
       const whyResult = await uploadToCloudinary(data.whyChooseUs.image, "miralyfoods/cms");
       data.whyChooseUs.image = whyResult.secure_url;
     }
+    // Process "Why Shop with us" card images (one per feature)
+    if (Array.isArray(data.trustSection?.features)) {
+      for (const feature of data.trustSection.features) {
+        if (feature?.image && feature.image.startsWith("data:")) {
+          const trustResult = await uploadToCloudinary(feature.image, "miralyfoods/cms");
+          feature.image = trustResult.secure_url;
+        }
+      }
+    }
 
     await connectDB();
 

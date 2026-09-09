@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Save, Loader2, Image as ImageIcon, X } from "lucide-react";
+import { Save, Loader2, Image as ImageIcon, X, Plus, Trash2 } from "lucide-react";
+import {
+  TRUST_ICONS,
+  TRUST_SECTION_DEFAULTS,
+} from "@/components/TrustSection";
 import toast from "react-hot-toast";
 
 const INPUT_CLASS =
@@ -26,9 +30,14 @@ export default function CmsClient({
     aboutUs: initialSettings?.aboutUs || {},
     ourStory: initialSettings?.ourStory || {},
     whyChooseUs: initialSettings?.whyChooseUs || { features: [] },
+    trustSection: initialSettings?.trustSection?.features?.length
+      ? initialSettings.trustSection
+      : structuredClone(TRUST_SECTION_DEFAULTS),
   }));
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<"about" | "ourStory" | "whyChooseUs">("about");
+  const [activeTab, setActiveTab] = useState<
+    "about" | "ourStory" | "whyChooseUs" | "trustSection"
+  >("about");
 
   useEffect(() => {
     setSettings({
@@ -36,6 +45,9 @@ export default function CmsClient({
       aboutUs: initialSettings?.aboutUs || {},
       ourStory: initialSettings?.ourStory || {},
       whyChooseUs: initialSettings?.whyChooseUs || { features: [] },
+    trustSection: initialSettings?.trustSection?.features?.length
+      ? initialSettings.trustSection
+      : structuredClone(TRUST_SECTION_DEFAULTS),
     });
   }, [initialSettings]);
 
@@ -94,6 +106,57 @@ export default function CmsClient({
       features[index][field] = value;
       return { ...prev, whyChooseUs: { ...whyChooseUs, features } };
     });
+  };
+
+  const updateTrustSection = (field: string, value: any) => {
+    setSettings((prev: any) => ({
+      ...prev,
+      trustSection: { ...(prev.trustSection || {}), [field]: value },
+    }));
+  };
+
+  const updateTrustFeature = (index: number, field: string, value: string) => {
+    setSettings((prev: any) => {
+      const trustSection = prev.trustSection || {};
+      const features = [...(trustSection.features || [])];
+      features[index] = { ...(features[index] || {}), [field]: value };
+      return { ...prev, trustSection: { ...trustSection, features } };
+    });
+  };
+
+  const addTrustFeature = () => {
+    setSettings((prev: any) => {
+      const trustSection = prev.trustSection || {};
+      const features = [...(trustSection.features || [])];
+      features.push({ icon: "ShieldCheck", title: "", description: "", image: "" });
+      return { ...prev, trustSection: { ...trustSection, features } };
+    });
+  };
+
+  const removeTrustFeature = (index: number) => {
+    setSettings((prev: any) => {
+      const trustSection = prev.trustSection || {};
+      const features = (trustSection.features || []).filter(
+        (_: any, i: number) => i !== index,
+      );
+      return { ...prev, trustSection: { ...trustSection, features } };
+    });
+  };
+
+  const handleTrustImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    index: number,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File size must be less than 2MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () =>
+      updateTrustFeature(index, "image", reader.result as string);
+    reader.readAsDataURL(file);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, section: "aboutUs" | "ourStory" | "whyChooseUs", field: string) => {
@@ -212,6 +275,16 @@ export default function CmsClient({
           }`}
         >
           Home - Why Choose Us
+        </button>
+        <button
+          onClick={() => setActiveTab("trustSection")}
+          className={`px-6 py-2.5 rounded-full font-bold uppercase tracking-wide text-xs transition-all ${
+            activeTab === "trustSection"
+              ? "bg-[#007D71] text-white shadow-md shadow-[#007D71]/20"
+              : "bg-white text-gray-500 hover:bg-gray-50 border border-gray-100"
+          }`}
+        >
+          Home - Why Shop
         </button>
       </div>
 
@@ -497,6 +570,157 @@ export default function CmsClient({
                   </div>
                 </div>
               ))}
+            </div>
+          </>
+        )}
+
+        {activeTab === "trustSection" && (
+          <>
+            <h2 className="text-lg font-black text-primary-dark uppercase tracking-tight border-b pb-4">
+              Why Shop Section
+            </h2>
+            <div>
+              <FieldLabel>Section Heading</FieldLabel>
+              <input
+                type="text"
+                className={INPUT_CLASS}
+                value={settings.trustSection?.title || ""}
+                onChange={(e) => updateTrustSection("title", e.target.value)}
+                placeholder="Why Shop with Miraly Foods?"
+              />
+            </div>
+
+            <div className="flex items-center justify-between border-b pb-4 pt-8">
+              <h2 className="text-lg font-black text-primary-dark uppercase tracking-tight">
+                Cards
+              </h2>
+              <button
+                type="button"
+                onClick={addTrustFeature}
+                className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-dark transition-colors"
+              >
+                <Plus size={14} />
+                Add Card
+              </button>
+            </div>
+
+            <div className="space-y-6 pt-4">
+              {(settings.trustSection?.features || []).length === 0 && (
+                <p className="text-sm text-gray-400 text-center py-8">
+                  No cards yet. The section stays hidden on the home page until
+                  you add one.
+                </p>
+              )}
+
+              {(settings.trustSection?.features || []).map(
+                (feature: any, i: number) => (
+                  <div
+                    key={i}
+                    className="p-5 border border-gray-100 rounded-2xl space-y-4 bg-gray-50/30"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black uppercase tracking-widest text-gray-400">
+                        Card {i + 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => removeTrustFeature(i)}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        aria-label={`Remove card ${i + 1}`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <FieldLabel>Icon</FieldLabel>
+                        <select
+                          className={INPUT_CLASS}
+                          value={feature?.icon || "ShieldCheck"}
+                          onChange={(e) =>
+                            updateTrustFeature(i, "icon", e.target.value)
+                          }
+                        >
+                          {Object.keys(TRUST_ICONS).map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <FieldLabel>Title</FieldLabel>
+                        <input
+                          type="text"
+                          className={INPUT_CLASS}
+                          value={feature?.title || ""}
+                          onChange={(e) =>
+                            updateTrustFeature(i, "title", e.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <FieldLabel>Description</FieldLabel>
+                      <textarea
+                        className={INPUT_CLASS}
+                        value={feature?.description || ""}
+                        onChange={(e) =>
+                          updateTrustFeature(i, "description", e.target.value)
+                        }
+                        rows={3}
+                      />
+                    </div>
+
+                    <div>
+                      <FieldLabel>Background Image</FieldLabel>
+                      <p className="text-xs text-gray-400 mb-2">
+                        800x1000px works best. Text sits over a dark scrim, so
+                        pick an image that stays readable.
+                      </p>
+                      <div className="flex flex-col gap-3">
+                        {feature?.image ? (
+                          <div className="relative group w-full max-w-sm aspect-video bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+                            <Image
+                              src={feature.image}
+                              alt={feature.title || `Card ${i + 1}`}
+                              className="w-full h-full object-cover"
+                              fill
+                              unoptimized
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  updateTrustFeature(i, "image", "")
+                                }
+                                className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <label className="w-full max-w-sm aspect-video border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-primary transition-colors text-gray-400">
+                            <ImageIcon size={24} />
+                            <span className="text-xs font-semibold">
+                              Upload image
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => handleTrustImageUpload(e, i)}
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ),
+              )}
             </div>
           </>
         )}
