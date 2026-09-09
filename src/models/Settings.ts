@@ -132,6 +132,34 @@ const SettingsSchema = new Schema(
         ]
       }
     },
+    // Home page "Why Shop with ..." cards. Defaults mirror what the section
+    // was hardcoded with, so an unconfigured store renders unchanged.
+    trustSection: {
+      title: { type: String, default: "Why Shop with Miraly Foods?" },
+      features: {
+        type: [{ icon: String, title: String, description: String, image: String }],
+        default: [
+          {
+            icon: "ShieldCheck",
+            title: "100% Pure & Safe",
+            description: "We never compromise on purity. Every product is crafted using natural ingredients — free from artificial additives and harmful chemicals.",
+            image: "https://images.pexels.com/photos/2802527/pexels-photo-2802527.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+          },
+          {
+            icon: "Heart",
+            title: "Made with Care",
+            description: "Quality without shortcuts. Our products are prepared with traditional recipes and modern hygiene standards to ensure the best for your family.",
+            image: "https://images.pexels.com/photos/4198714/pexels-photo-4198714.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+          },
+          {
+            icon: "Leaf",
+            title: "Farm-Sourced Ingredients",
+            description: "Rooted in nature, responsibly sourced. We partner with trusted farms and suppliers to ensure every ingredient meets our quality and freshness standards.",
+            image: "https://images.pexels.com/photos/1483880/pexels-photo-1483880.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+          }
+        ]
+      }
+    },
   },
   {
     timestamps: true,

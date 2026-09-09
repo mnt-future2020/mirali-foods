@@ -6,7 +6,13 @@ import Link from "next/link";
 import { ArrowRight, Star, ShoppingCart, Minus, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useCart } from "@/context/CartContext";
-import toast from "react-hot-toast";
+import {
+  useBuyNow,
+  useVariantSelection,
+  useQuantitySelection,
+  cartPayload,
+  formatUom,
+} from "@/lib/useProductCard";
 
 interface Product {
   _id: string;
@@ -37,10 +43,9 @@ export default function RelatedProducts({
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const getQty = (id: string) => quantities[id] || 1;
-  const setQty = (id: string, val: number) =>
-    setQuantities((prev) => ({ ...prev, [id]: Math.max(1, val) }));
+  const buyNow = useBuyNow();
+  const { getVariant, selectVariant, getPrice } = useVariantSelection();
+  const { getQty, setQty } = useQuantitySelection();
 
   useEffect(() => {
     const fetchRelatedProducts = async () => {
@@ -109,9 +114,6 @@ export default function RelatedProducts({
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
         {products.map((p, i) => {
-          const minPrice = p.variants?.length
-            ? Math.min(...p.variants.map((v) => v.price))
-            : p.price;
           const totalStock = p.variants?.length
             ? p.variants.reduce((acc, v) => acc + (v.stock || 0), 0)
             : p.stock || 0;
@@ -123,21 +125,24 @@ export default function RelatedProducts({
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="group"
+              className="group bg-white rounded-3xl p-3 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
             >
-              <Link href={`/shop/${p.slug}`}>
-                <div className="aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-secondary/10 relative border border-primary/5">
+              <div className="relative">
+                <Link
+                  href={`/shop/${p.slug}`}
+                  className="block relative aspect-square rounded-2xl overflow-hidden bg-gray-50"
+                >
                   {p.images?.[0] ? (
                     <Image
                       src={p.images[0]}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-[1.5s]"
+                      className="object-cover group-hover:scale-105 transition-transform duration-500"
                       alt={p.name}
                       fill
                       sizes="(max-width: 768px) 50vw, 25vw"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                      <ShoppingCart size={48} className="text-gray-300" />
+                      <ShoppingCart size={40} className="text-gray-300" />
                     </div>
                   )}
                   {isOutOfStock && (
@@ -147,68 +152,102 @@ export default function RelatedProducts({
                       </span>
                     </div>
                   )}
-                  {p.numReviews > 0 && (
-                    <div className="absolute top-6 right-6 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center gap-1.5 text-accent shadow-lg">
-                      <Star size={12} fill="currentColor" />
-                      <span className="text-xs font-bold">{p.rating}</span>
+                </Link>
+
+                {p.numReviews > 0 && (
+                  <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1.5 text-accent shadow-sm">
+                    <Star size={11} fill="currentColor" />
+                    <span className="text-[11px] font-semibold">{p.rating}</span>
+                  </span>
+                )}
+              </div>
+
+              <div className="flex flex-col flex-1 px-2 pt-4 pb-1">
+                {p.category && (
+                  <p className="text-xs text-primary font-medium mb-1">
+                    {typeof p.category === "object"
+                      ? (p.category as any).name
+                      : p.category}
+                  </p>
+                )}
+                <Link href={`/shop/${p.slug}`}>
+                  <h3 className="text-sm md:text-base font-semibold text-text-heading leading-snug line-clamp-2 hover:text-primary transition-colors">
+                    {p.name}
+                  </h3>
+                </Link>
+                <p className="mt-1.5 text-sm md:text-base font-bold font-number text-text-heading">
+                  ₹{getPrice(p)}
+                </p>
+
+                {!isOutOfStock && (
+                  <>
+                    {/* Size / Weight */}
+                    {p.variants && p.variants.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {p.variants.map((v: any, vi: number) => (
+                          <button
+                            key={vi}
+                            onClick={() => selectVariant(p._id, v.uom)}
+                            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wide border transition-colors ${
+                              getVariant(p)?.uom === v.uom
+                                ? "bg-primary border-primary text-white"
+                                : "bg-white border-gray-200 text-text-body hover:border-primary/50"
+                            }`}
+                          >
+                            {formatUom(v.uom)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Quantity */}
+                    <p className="mt-3 text-[10px] font-bold text-primary uppercase tracking-wider">
+                      Quantity:
+                    </p>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 w-[104px] flex-shrink-0">
+                        <button
+                          onClick={() => setQty(p._id, getQty(p._id) - 1)}
+                          className="text-gray-500 hover:text-primary transition-colors"
+                          aria-label="Decrease quantity"
+                        >
+                          <Minus size={14} strokeWidth={3} />
+                        </button>
+                        <span className="text-sm font-bold text-text-heading">
+                          {getQty(p._id)}
+                        </span>
+                        <button
+                          onClick={() => setQty(p._id, getQty(p._id) + 1)}
+                          className="text-gray-500 hover:text-primary transition-colors"
+                          aria-label="Increase quantity"
+                        >
+                          <Plus size={14} strokeWidth={3} />
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => {
+                          addToCart(cartPayload(p, getVariant(p)), getQty(p._id));
+                          setQty(p._id, 1);
+                        }}
+                        className="flex-1 min-w-0 flex items-center justify-center gap-1.5 bg-primary text-white rounded-lg py-2 text-[10px] font-bold uppercase tracking-wide hover:bg-primary-dark transition-colors"
+                      >
+                        <ShoppingCart size={13} />
+                        <span className="truncate">Add to Cart</span>
+                      </button>
                     </div>
-                  )}
-                </div>
-              </Link>
 
-              {/* Quantity and Add to Cart Row */}
-              {!isOutOfStock && (
-                <div className="flex gap-2 pt-4 mb-4">
-                  <div className="flex-1 flex items-center justify-between bg-gray-50 rounded-sm px-4 py-2 border border-gray-100">
-                    <button
-                      onClick={() => setQty(p._id, getQty(p._id) - 1)}
-                      className="text-text-body hover:text-primary transition-colors h-full flex items-center"
-                    >
-                      <Minus size={14} strokeWidth={3} />
-                    </button>
-                    <span className="text-sm font-bold text-text-heading mx-2">
-                      {getQty(p._id)}
-                    </span>
-                    <button
-                      onClick={() => setQty(p._id, getQty(p._id) + 1)}
-                      className="text-text-body hover:text-primary transition-colors h-full flex items-center"
-                    >
-                      <Plus size={14} strokeWidth={3} />
-                    </button>
-                  </div>
+                  </>
+                )}
+
+                {!isOutOfStock && (
                   <button
-                    onClick={() => {
-                      if (p.variants && p.variants.length > 0) {
-                        const bestVariant = p.variants[0];
-                        addToCart(
-                          { ...p, price: bestVariant.price, uom: bestVariant.uom },
-                          getQty(p._id)
-                        );
-                      } else {
-                        addToCart(p, getQty(p._id));
-                      }
-                      setQty(p._id, 1);
-                    }}
-                    className="bg-primary text-white p-3 rounded-sm hover:bg-primary-dark transition-colors shadow-md flex items-center justify-center aspect-square"
+                    onClick={() => buyNow(p, getQty(p._id), getVariant(p))}
+                    className="mt-4 w-full bg-gray-900 text-white py-3 rounded-full text-sm font-semibold hover:bg-black transition-colors"
                   >
-                    <ShoppingCart size={18} />
+                    Buy Now
                   </button>
-                </div>
-              )}
-
-              <Link href={`/shop/${p.slug}`}>
-                <h3 className="text-lg font-serif font-black text-primary-dark mb-1 group-hover:text-primary transition-colors leading-tight">
-                  {p.name}
-                </h3>
-                <div className="flex justify-between items-center">
-                  <span className="font-sans font-black text-brown">
-                    ₹{minPrice}
-                  </span>
-                  <span className="text-[10px] font-sans font-black uppercase tracking-widest text-primary/40 group-hover:text-primary-dark transition-colors">
-                    View Details
-                  </span>
-                </div>
-              </Link>
+                )}
+              </div>
             </motion.div>
           );
         })}
