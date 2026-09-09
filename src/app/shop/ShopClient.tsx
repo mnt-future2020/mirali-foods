@@ -28,6 +28,7 @@ import {
   cartPayload,
   formatUom,
 } from "@/lib/useProductCard";
+import VariantSelect from "@/components/VariantSelect";
 import { useSearchParams } from "next/navigation";
 
 export default function ShopClient({
@@ -642,18 +643,11 @@ export default function ShopClient({
 
                             {/* Size / Weight — a single variant has nothing to choose */}
                             {p.variants && p.variants.length > 1 && (
-                              <select
+                              <VariantSelect
+                                variants={p.variants}
                                 value={getVariant(p)?.uom || ""}
-                                onChange={(e) => selectVariant(p._id, e.target.value)}
-                                aria-label="Select size"
-                                className="ml-auto bg-white border border-gray-200 rounded-lg pl-2 pr-1 py-1 text-[11px] font-bold text-text-heading cursor-pointer outline-none focus:border-primary transition-colors"
-                              >
-                                {p.variants.map((v: any, vi: number) => (
-                                  <option key={vi} value={v.uom}>
-                                    {formatUom(v.uom)}
-                                  </option>
-                                ))}
-                              </select>
+                                onChange={(uom) => selectVariant(p._id, uom)}
+                              />
                             )}
 
                             {p.variants && p.variants.length === 1 && (

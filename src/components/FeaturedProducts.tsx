@@ -13,6 +13,7 @@ import {
   cartPayload,
   formatUom,
 } from "@/lib/useProductCard";
+import VariantSelect from "@/components/VariantSelect";
 import { useState } from "react";
 
 export default function FeaturedProducts({
@@ -154,18 +155,11 @@ export default function FeaturedProducts({
 
                   {/* Size / Weight — a single variant has nothing to choose */}
                   {product.variants && product.variants.length > 1 && (
-                    <select
+                    <VariantSelect
+                      variants={product.variants}
                       value={getVariant(product)?.uom || ""}
-                      onChange={(e) => selectVariant(product._id, e.target.value)}
-                      aria-label="Select size"
-                      className="ml-auto bg-white border border-gray-200 rounded-lg pl-2 pr-1 py-1 text-[11px] font-bold text-text-heading cursor-pointer outline-none focus:border-primary transition-colors"
-                    >
-                      {product.variants.map((v: any, vi: number) => (
-                        <option key={vi} value={v.uom}>
-                          {formatUom(v.uom)}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(uom) => selectVariant(product._id, uom)}
+                    />
                   )}
 
                   {product.variants && product.variants.length === 1 && (
