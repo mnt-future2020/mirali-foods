@@ -204,13 +204,10 @@ export default function FeaturedProducts({
                       setQty(product._id, 1);
                     }}
                     aria-label="Add to cart"
-                    className="flex-shrink-0 flex items-center justify-center gap-1.5 bg-primary text-white rounded-lg h-[22px] w-[22px] sm:h-[34px] sm:w-[34px] xl:w-auto xl:px-3 hover:bg-primary-dark transition-colors"
+                    className="flex-shrink-0 flex items-center justify-center gap-1.5 bg-primary text-white rounded-lg h-[22px] w-[22px] sm:h-[34px] sm:w-[34px] hover:bg-primary-dark transition-colors"
                   >
                     <ShoppingCart size={12} className="flex-shrink-0 sm:hidden" />
                     <ShoppingCart size={14} className="flex-shrink-0 hidden sm:block" />
-                    <span className="hidden xl:inline text-[10px] font-bold uppercase tracking-wide">
-                      Add
-                    </span>
                   </button>
                   <button
                     onClick={() => buyNow(product, getQty(product._id), getVariant(product))}
