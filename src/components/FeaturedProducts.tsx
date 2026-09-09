@@ -73,7 +73,7 @@ export default function FeaturedProducts({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.05 }}
-              className="group bg-white rounded-3xl p-3 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
+              className="group bg-white rounded-3xl p-2 sm:p-3 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col"
             >
               <div className="relative">
                 <Link
@@ -97,7 +97,7 @@ export default function FeaturedProducts({
                 {/* Badge */}
                 {(product.badge ||
                   (product.mrp && product.mrp > product.price)) && (
-                  <span className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-full text-[11px] font-semibold text-text-heading shadow-sm">
+                  <span className="absolute top-2 left-2 sm:top-3 sm:left-3 max-w-[calc(100%-3.25rem)] truncate bg-white/95 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-[11px] font-semibold text-text-heading shadow-sm">
                     {product.badge ||
                       `${Math.round(
                         ((product.mrp - product.price) / product.mrp) * 100,
@@ -114,7 +114,7 @@ export default function FeaturedProducts({
                       addToWishlist(product);
                     }
                   }}
-                  className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center transition-colors hover:bg-gray-50"
+                  className="absolute top-2 right-2 sm:top-3 sm:right-3 w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-white shadow-sm flex items-center justify-center transition-colors hover:bg-gray-50"
                   aria-label="Add to wishlist"
                 >
                   <Heart
@@ -129,7 +129,7 @@ export default function FeaturedProducts({
                 </button>
               </div>
 
-              <div className="flex flex-col flex-1 px-2 pt-4 pb-1">
+              <div className="flex flex-col flex-1 px-1 sm:px-2 pt-3 sm:pt-4 pb-1">
                 {product.category && (
                   <p className="text-xs text-primary font-medium mb-1">
                     {typeof product.category === "object"
@@ -142,48 +142,51 @@ export default function FeaturedProducts({
                     {product.name}
                   </h3>
                 </Link>
-                <p className="mt-1.5 text-sm md:text-base font-bold font-number text-text-heading">
-                  ₹{getPrice(product)}
-                  {product.mrp && product.mrp > product.price && (
-                    <span className="text-text-body/50 text-xs line-through ml-2 font-medium">
-                      ₹{product.mrp}
+                <div className="mt-1.5 flex items-center gap-2">
+                  <p className="text-sm md:text-base font-bold font-number text-text-heading">
+                    ₹{getPrice(product)}
+                    {product.mrp && product.mrp > product.price && (
+                      <span className="text-text-body/50 text-xs line-through ml-2 font-medium">
+                        ₹{product.mrp}
+                      </span>
+                    )}
+                  </p>
+
+                  {/* Size / Weight — a single variant has nothing to choose */}
+                  {product.variants && product.variants.length > 1 && (
+                    <select
+                      value={getVariant(product)?.uom || ""}
+                      onChange={(e) => selectVariant(product._id, e.target.value)}
+                      aria-label="Select size"
+                      className="ml-auto bg-white border border-gray-200 rounded-lg pl-2 pr-1 py-1 text-[11px] font-bold text-text-heading cursor-pointer outline-none focus:border-primary transition-colors"
+                    >
+                      {product.variants.map((v: any, vi: number) => (
+                        <option key={vi} value={v.uom}>
+                          {formatUom(v.uom)}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  {product.variants && product.variants.length === 1 && (
+                    <span className="ml-auto text-[11px] font-bold text-text-body/70">
+                      {formatUom(product.variants[0].uom)}
                     </span>
                   )}
-                </p>
+                </div>
 
-                {/* Size / Weight */}
-                {product.variants && product.variants.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {product.variants.map((v: any, vi: number) => (
-                      <button
-                        key={vi}
-                        onClick={() => selectVariant(product._id, v.uom)}
-                        className={`px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wide border transition-colors ${
-                          getVariant(product)?.uom === v.uom
-                            ? "bg-primary border-primary text-white"
-                            : "bg-white border-gray-200 text-text-body hover:border-primary/50"
-                        }`}
-                      >
-                        {formatUom(v.uom)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Quantity */}
-                <p className="mt-3 text-[10px] font-bold text-primary uppercase tracking-wider">
-                  Quantity:
-                </p>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-2.5 py-1.5 w-[104px] flex-shrink-0">
+                {/* Quantity + Add to Cart + Buy Now, kept on a single line */}
+                <div className="mt-3 flex flex-wrap items-center gap-[2px] sm:gap-2">
+                  <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-1 sm:px-2 h-[22px] sm:h-[34px] w-[40px] sm:w-[72px] flex-shrink-0">
                     <button
                       onClick={() => setQty(product._id, getQty(product._id) - 1)}
                       className="text-gray-500 hover:text-primary transition-colors"
                       aria-label="Decrease quantity"
                     >
-                      <Minus size={14} strokeWidth={3} />
+                      <Minus size={10} strokeWidth={3} className="sm:hidden" />
+                      <Minus size={14} strokeWidth={3} className="hidden sm:block" />
                     </button>
-                    <span className="text-sm font-bold text-text-heading">
+                    <span className="text-[9px] sm:text-sm font-bold text-text-heading">
                       {getQty(product._id)}
                     </span>
                     <button
@@ -191,7 +194,8 @@ export default function FeaturedProducts({
                       className="text-gray-500 hover:text-primary transition-colors"
                       aria-label="Increase quantity"
                     >
-                      <Plus size={14} strokeWidth={3} />
+                      <Plus size={10} strokeWidth={3} className="sm:hidden" />
+                      <Plus size={14} strokeWidth={3} className="hidden sm:block" />
                     </button>
                   </div>
                   <button
@@ -199,21 +203,23 @@ export default function FeaturedProducts({
                       addToCart(cartPayload(product, getVariant(product)), getQty(product._id));
                       setQty(product._id, 1);
                     }}
-                    className="flex-1 min-w-0 flex items-center justify-center gap-1.5 bg-primary text-white rounded-lg py-2 text-[10px] font-bold uppercase tracking-wide hover:bg-primary-dark transition-colors"
+                    aria-label="Add to cart"
+                    className="flex-shrink-0 flex items-center justify-center gap-1.5 bg-primary text-white rounded-lg h-[22px] w-[22px] sm:h-[34px] sm:w-[34px] xl:w-auto xl:px-3 hover:bg-primary-dark transition-colors"
                   >
-                    <ShoppingCart size={13} />
-                    <span className="truncate">Add to Cart</span>
+                    <ShoppingCart size={12} className="flex-shrink-0 sm:hidden" />
+                    <ShoppingCart size={14} className="flex-shrink-0 hidden sm:block" />
+                    <span className="hidden xl:inline text-[10px] font-bold uppercase tracking-wide">
+                      Add
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => buyNow(product, getQty(product._id), getVariant(product))}
+                    className="flex-1 min-w-[34px] bg-gray-900 text-white rounded-full h-[22px] sm:h-[34px] px-0.5 sm:px-1 text-[9px] sm:text-[10px] xl:text-xs font-semibold whitespace-nowrap hover:bg-black transition-colors"
+                  >
+                    <span className="sm:hidden">Buy</span>
+                    <span className="hidden sm:inline">Buy Now</span>
                   </button>
                 </div>
-
-                <button
-                  onClick={() =>
-                    buyNow(product, getQty(product._id), getVariant(product))
-                  }
-                  className="mt-4 w-full bg-gray-900 text-white py-3 rounded-full text-sm font-semibold hover:bg-black transition-colors"
-                >
-                  Buy Now
-                </button>
               </div>
             </motion.div>
           ))}
