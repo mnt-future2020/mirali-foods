@@ -6,12 +6,10 @@ import Link from "next/link";
 import { ArrowRight, Star, ShoppingCart, Minus, Plus } from "lucide-react";
 import VariantSelect from "@/components/VariantSelect";
 import { useEffect, useState } from "react";
-import { useCart } from "@/context/CartContext";
 import {
   useBuyNow,
   useVariantSelection,
   useQuantitySelection,
-  cartPayload,
   formatUom,
 } from "@/lib/useProductCard";
 
@@ -25,6 +23,7 @@ interface Product {
   images: string[];
   category: string;
   stock: number;
+  uom?: string;
   variants?: Array<{
     uom: string;
     price: number;
@@ -43,7 +42,6 @@ export default function RelatedProducts({
 }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const { addToCart } = useCart();
   const buyNow = useBuyNow();
   const { getVariant, selectVariant, getPrice } = useVariantSelection();
   const { getQty, setQty } = useQuantitySelection();
@@ -163,9 +161,41 @@ export default function RelatedProducts({
                 )}
               </div>
 
-              <div className="flex flex-col flex-1 px-1 sm:px-2 pt-3 sm:pt-4 pb-1">
+              {!isOutOfStock && (
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="flex-1 min-w-0 flex items-center justify-between bg-white border border-gray-200 rounded-lg px-1 sm:px-2 h-[26px] sm:h-[34px]">
+                    <button
+                      onClick={() => setQty(p._id, getQty(p._id) - 1)}
+                      className="text-gray-500 hover:text-primary transition-colors"
+                      aria-label="Decrease quantity"
+                    >
+                      <Minus size={11} strokeWidth={3} className="sm:hidden" />
+                      <Minus size={14} strokeWidth={3} className="hidden sm:block" />
+                    </button>
+                    <span className="text-[10px] sm:text-sm font-bold text-text-heading">
+                      {getQty(p._id)}
+                    </span>
+                    <button
+                      onClick={() => setQty(p._id, getQty(p._id) + 1)}
+                      className="text-gray-500 hover:text-primary transition-colors"
+                      aria-label="Increase quantity"
+                    >
+                      <Plus size={11} strokeWidth={3} className="sm:hidden" />
+                      <Plus size={14} strokeWidth={3} className="hidden sm:block" />
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => buyNow(p, getQty(p._id), getVariant(p))}
+                    className="flex-shrink-0 bg-gray-900 text-white rounded-lg h-[26px] sm:h-[34px] px-3 sm:px-5 text-[10px] sm:text-xs font-semibold whitespace-nowrap hover:bg-black transition-colors"
+                  >
+                    Buy
+                  </button>
+                </div>
+              )}
+
+              <div className="flex flex-col flex-1 px-1 sm:px-2 pt-3 pb-1 text-center">
                 {p.category && (
-                  <p className="text-xs text-primary font-medium mb-1">
+                  <p className="text-[10px] sm:text-xs text-primary font-medium uppercase tracking-wide mb-1">
                     {typeof p.category === "object"
                       ? (p.category as any).name
                       : p.category}
@@ -176,74 +206,25 @@ export default function RelatedProducts({
                     {p.name}
                   </h3>
                 </Link>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <p className="text-sm md:text-base font-bold font-number text-text-heading">
-                    ₹{getPrice(p)}
-                  </p>
 
+                <div className="mt-2 flex items-center justify-between gap-2">
                   {/* Size / Weight — a single variant has nothing to choose */}
-                  {p.variants && p.variants.length > 1 && (
+                  {p.variants && p.variants.length > 1 ? (
                     <VariantSelect
                       variants={p.variants}
                       value={getVariant(p)?.uom || ""}
                       onChange={(uom) => selectVariant(p._id, uom)}
                     />
-                  )}
-
-                  {p.variants && p.variants.length === 1 && (
-                    <span className="ml-auto text-[11px] font-bold text-text-body/70">
-                      {formatUom(p.variants[0].uom)}
+                  ) : (
+                    <span className="text-[11px] font-bold text-text-body/70">
+                      {formatUom(p.variants?.[0]?.uom || p.uom)}
                     </span>
                   )}
+
+                  <p className="text-sm md:text-base font-bold font-number text-text-heading">
+                    ₹{getPrice(p)}
+                  </p>
                 </div>
-
-                {!isOutOfStock && (
-                  <>
-                    {/* Quantity + Add to Cart + Buy Now, kept on a single line */}
-                    <div className="mt-3 flex flex-wrap items-center gap-[2px] sm:gap-2">
-                      <div className="flex items-center justify-between bg-white border border-gray-200 rounded-lg px-1 sm:px-2 h-[22px] sm:h-[34px] w-[40px] sm:w-[72px] flex-shrink-0">
-                        <button
-                          onClick={() => setQty(p._id, getQty(p._id) - 1)}
-                          className="text-gray-500 hover:text-primary transition-colors"
-                          aria-label="Decrease quantity"
-                        >
-                          <Minus size={10} strokeWidth={3} className="sm:hidden" />
-                          <Minus size={14} strokeWidth={3} className="hidden sm:block" />
-                        </button>
-                        <span className="text-[9px] sm:text-sm font-bold text-text-heading">
-                          {getQty(p._id)}
-                        </span>
-                        <button
-                          onClick={() => setQty(p._id, getQty(p._id) + 1)}
-                          className="text-gray-500 hover:text-primary transition-colors"
-                          aria-label="Increase quantity"
-                        >
-                          <Plus size={10} strokeWidth={3} className="sm:hidden" />
-                          <Plus size={14} strokeWidth={3} className="hidden sm:block" />
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => {
-                          addToCart(cartPayload(p, getVariant(p)), getQty(p._id));
-                          setQty(p._id, 1);
-                        }}
-                        aria-label="Add to cart"
-                        className="flex-shrink-0 flex items-center justify-center gap-1.5 bg-primary text-white rounded-lg h-[22px] w-[22px] sm:h-[34px] sm:w-[34px] hover:bg-primary-dark transition-colors"
-                      >
-                        <ShoppingCart size={12} className="flex-shrink-0 sm:hidden" />
-                    <ShoppingCart size={14} className="flex-shrink-0 hidden sm:block" />
-                      </button>
-                      <button
-                        onClick={() => buyNow(p, getQty(p._id), getVariant(p))}
-                        className="flex-1 min-w-[34px] bg-gray-900 text-white rounded-full h-[22px] sm:h-[34px] px-0.5 sm:px-1 text-[9px] sm:text-[10px] xl:text-xs font-semibold whitespace-nowrap hover:bg-black transition-colors"
-                      >
-                        <span className="sm:hidden">Buy</span>
-                        <span className="hidden sm:inline">Buy Now</span>
-                      </button>
-                    </div>
-
-                  </>
-                )}
               </div>
             </motion.div>
           );

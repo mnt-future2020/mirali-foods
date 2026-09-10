@@ -44,7 +44,7 @@ export default function VariantSelect({
   }, [open]);
 
   return (
-    <div ref={ref} className="relative ml-auto">
+    <div ref={ref} className="relative">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -64,7 +64,7 @@ export default function VariantSelect({
         <div
           role="listbox"
           aria-label="Size"
-          className="absolute bottom-full right-0 mb-1 z-30 min-w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+          className="absolute bottom-full left-0 mb-1 z-30 min-w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
         >
           {variants.map((v, i) => (
             <button
