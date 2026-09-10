@@ -126,9 +126,10 @@ export default function TrustSection({
                     className="object-cover transition-transform duration-[1.5s] group-hover:scale-110"
                   />
                 )}
-                {/* Readability overlay — bottom-weighted scrim keeps text crisp */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/65 to-black/25" />
-                <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 to-transparent" />
+                {/* Readability scrim. One bottom-weighted gradient rather than
+                    two stacked ones, so the photo still reads through the top
+                    two-thirds while the text below keeps its contrast. */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent" />
 
                 {/* Icon — top */}
                 <div className="relative z-10 p-7">
