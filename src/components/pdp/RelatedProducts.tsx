@@ -186,7 +186,7 @@ export default function RelatedProducts({
                   </div>
                   <button
                     onClick={() => buyNow(p, getQty(p._id), getVariant(p))}
-                    className="flex-shrink-0 bg-gray-900 text-white rounded-lg h-[26px] sm:h-[34px] px-3 sm:px-5 text-[10px] sm:text-xs font-semibold whitespace-nowrap hover:bg-black transition-colors"
+                    className="flex-shrink-0 bg-primary text-white rounded-lg h-[26px] sm:h-[34px] px-3 sm:px-5 text-[10px] sm:text-xs font-semibold whitespace-nowrap hover:bg-primary-dark transition-colors"
                   >
                     Buy
                   </button>
