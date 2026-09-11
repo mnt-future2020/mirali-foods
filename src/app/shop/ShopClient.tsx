@@ -653,7 +653,7 @@ export default function ShopClient({
                             </p>
                           )}
                           <Link href={`/shop/${p.slug}`}>
-                            <h3 className="text-sm md:text-base font-semibold text-text-heading leading-snug line-clamp-2 hover:text-primary transition-colors">
+                            <h3 className="text-base font-bold text-text-heading leading-snug line-clamp-2 hover:text-primary transition-colors">
                               {p.name}
                             </h3>
                           </Link>
