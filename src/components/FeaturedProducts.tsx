@@ -166,7 +166,7 @@ export default function FeaturedProducts({
                   </p>
                 )}
                 <Link href={`/shop/${product.slug}`}>
-                  <h3 className="text-[15px] md:text-base font-semibold text-text-heading leading-snug line-clamp-2 hover:text-primary transition-colors">
+                  <h3 className="text-base font-bold text-text-heading leading-snug line-clamp-2 hover:text-primary transition-colors">
                     {product.name}
                   </h3>
                 </Link>
