@@ -160,6 +160,11 @@ const SettingsSchema = new Schema(
         ]
       }
     },
+    // Home page "Quality you can taste" section. Default mirrors the image the
+    // section was hardcoded with, so an unconfigured store renders unchanged.
+    qualitySection: {
+      image: { type: String, default: "https://6dfa0433ff.imgdist.com/pub/bfra/9ghkfuy7/6xn/dfh/i4j/dried-chili-pepper-pouring-out-from-sac-floor_1150-35720.jpg" }
+    },
   },
   {
     timestamps: true,

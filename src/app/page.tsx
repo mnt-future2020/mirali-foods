@@ -33,6 +33,11 @@ async function WhyShopSection() {
   return <TrustSection trustSection={settings?.trustSection} />;
 }
 
+async function QualitySection() {
+  const settings = await getSettings();
+  return <BeforeAfter qualitySection={settings?.qualitySection} />;
+}
+
 async function ProductsSection() {
   const products = await getFeaturedProducts(8);
   return <FeaturedProducts initialProducts={products} />;
@@ -73,7 +78,11 @@ export default function Home() {
         <WhyShopSection />
       </Suspense>
 
-      <BeforeAfter />
+      <Suspense
+        fallback={<div className="h-96 bg-white animate-pulse" />}
+      >
+        <QualitySection />
+      </Suspense>
 
       <GoogleReviewsCarousel />
 

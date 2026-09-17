@@ -3,7 +3,15 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 
-export default function BeforeAfter() {
+/** Used when the store has no qualitySection image configured yet. */
+const DEFAULT_IMAGE =
+  "https://6dfa0433ff.imgdist.com/pub/bfra/9ghkfuy7/6xn/dfh/i4j/dried-chili-pepper-pouring-out-from-sac-floor_1150-35720.jpg";
+
+export default function BeforeAfter({
+  qualitySection,
+}: {
+  qualitySection?: { image?: string };
+}) {
   return (
     <section className="py-6 md:py-16 relative overflow-hidden bg-white">
       <div className="container-custom relative z-10">
@@ -61,7 +69,7 @@ export default function BeforeAfter() {
             className="flex-1 relative aspect-[4/3] w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl border-4 border-white"
           >
             <Image
-              src="https://6dfa0433ff.imgdist.com/pub/bfra/9ghkfuy7/6xn/dfh/i4j/dried-chili-pepper-pouring-out-from-sac-floor_1150-35720.jpg"
+              src={qualitySection?.image || DEFAULT_IMAGE}
               alt="Miraly Foods Products"
               fill
               className="object-cover"
