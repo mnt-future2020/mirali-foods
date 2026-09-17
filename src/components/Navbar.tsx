@@ -166,7 +166,7 @@ export default function Navbar() {
               >
                 <Menu size={24} />
               </button>
-              <Link href="/" className="flex-shrink min-w-0 flex items-center gap-0">
+              <Link href="/" className="flex-shrink min-w-0 flex items-center gap-2 md:gap-3">
                 {settings?.logo ? (
                   <div className="h-9 md:h-16 w-20 sm:w-24 md:w-44 relative flex-shrink-0">
                     <Image
