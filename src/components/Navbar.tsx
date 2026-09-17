@@ -184,12 +184,12 @@ export default function Navbar() {
                   </span>
                 )}
                 {settings?.logo2 && (
-                  <div className="hidden sm:block h-9 md:h-16 w-16 sm:w-24 md:w-44 relative flex-shrink-0">
+                  <div className="h-9 md:h-16 w-12 sm:w-24 md:w-44 relative flex-shrink-0">
                     <Image
                       src={settings.logo2}
                       alt="Secondary Logo"
                       fill
-                      sizes="(max-width: 640px) 64px, (max-width: 768px) 96px, 176px"
+                      sizes="(max-width: 640px) 48px, (max-width: 768px) 96px, 176px"
                       className="object-contain object-left"
                     />
                   </div>
