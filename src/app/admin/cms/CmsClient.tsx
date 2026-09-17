@@ -7,6 +7,7 @@ import {
   TRUST_ICONS,
   TRUST_SECTION_DEFAULTS,
 } from "@/components/TrustSection";
+import { QUALITY_SECTION_DEFAULTS } from "@/components/BeforeAfter";
 import toast from "react-hot-toast";
 
 const INPUT_CLASS =
@@ -33,10 +34,17 @@ export default function CmsClient({
     trustSection: initialSettings?.trustSection?.features?.length
       ? initialSettings.trustSection
       : structuredClone(TRUST_SECTION_DEFAULTS),
+    qualitySection: {
+      ...QUALITY_SECTION_DEFAULTS,
+      ...(initialSettings?.qualitySection || {}),
+      stats: initialSettings?.qualitySection?.stats?.length
+        ? initialSettings.qualitySection.stats
+        : structuredClone(QUALITY_SECTION_DEFAULTS.stats),
+    },
   }));
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    "about" | "ourStory" | "whyChooseUs" | "trustSection"
+    "about" | "ourStory" | "whyChooseUs" | "trustSection" | "qualitySection"
   >("about");
 
   useEffect(() => {
@@ -48,6 +56,13 @@ export default function CmsClient({
     trustSection: initialSettings?.trustSection?.features?.length
       ? initialSettings.trustSection
       : structuredClone(TRUST_SECTION_DEFAULTS),
+    qualitySection: {
+      ...QUALITY_SECTION_DEFAULTS,
+      ...(initialSettings?.qualitySection || {}),
+      stats: initialSettings?.qualitySection?.stats?.length
+        ? initialSettings.qualitySection.stats
+        : structuredClone(QUALITY_SECTION_DEFAULTS.stats),
+    },
     });
   }, [initialSettings]);
 
@@ -106,6 +121,55 @@ export default function CmsClient({
       features[index][field] = value;
       return { ...prev, whyChooseUs: { ...whyChooseUs, features } };
     });
+  };
+
+  const updateQualitySection = (field: string, value: string) => {
+    setSettings((prev: any) => ({
+      ...prev,
+      qualitySection: { ...(prev.qualitySection || {}), [field]: value },
+    }));
+  };
+
+  const updateQualityStat = (index: number, field: string, value: any) => {
+    setSettings((prev: any) => {
+      const qualitySection = prev.qualitySection || {};
+      const stats = [...(qualitySection.stats || [])];
+      stats[index] = { ...(stats[index] || {}), [field]: value };
+      return { ...prev, qualitySection: { ...qualitySection, stats } };
+    });
+  };
+
+  const addQualityStat = () => {
+    setSettings((prev: any) => {
+      const qualitySection = prev.qualitySection || {};
+      const stats = [...(qualitySection.stats || []), { label: "", value: 100 }];
+      return { ...prev, qualitySection: { ...qualitySection, stats } };
+    });
+  };
+
+  const removeQualityStat = (index: number) => {
+    setSettings((prev: any) => {
+      const qualitySection = prev.qualitySection || {};
+      const stats = (qualitySection.stats || []).filter(
+        (_: any, i: number) => i !== index,
+      );
+      return { ...prev, qualitySection: { ...qualitySection, stats } };
+    });
+  };
+
+  const handleQualityImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File size must be less than 2MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () =>
+      updateQualitySection("image", reader.result as string);
+    reader.readAsDataURL(file);
   };
 
   const updateTrustSection = (field: string, value: any) => {
@@ -285,6 +349,16 @@ export default function CmsClient({
           }`}
         >
           Home - Why Shop
+        </button>
+        <button
+          onClick={() => setActiveTab("qualitySection")}
+          className={`px-6 py-2.5 rounded-full font-bold uppercase tracking-wide text-xs transition-all ${
+            activeTab === "qualitySection"
+              ? "bg-[#007D71] text-white shadow-md shadow-[#007D71]/20"
+              : "bg-white text-gray-500 hover:bg-gray-50 border border-gray-100"
+          }`}
+        >
+          Home - Quality
         </button>
       </div>
 
@@ -718,6 +792,158 @@ export default function CmsClient({
                         )}
                       </div>
                     </div>
+                  </div>
+                ),
+              )}
+            </div>
+          </>
+        )}
+
+        {activeTab === "qualitySection" && (
+          <>
+            <h2 className="text-lg font-black text-primary-dark uppercase tracking-tight border-b pb-4">
+              Quality Section
+            </h2>
+            <div>
+              <FieldLabel>Heading</FieldLabel>
+              <textarea
+                className={INPUT_CLASS}
+                value={settings.qualitySection?.title || ""}
+                onChange={(e) => updateQualitySection("title", e.target.value)}
+                rows={2}
+              />
+            </div>
+            <div>
+              <FieldLabel>Description</FieldLabel>
+              <textarea
+                className={INPUT_CLASS}
+                value={settings.qualitySection?.description || ""}
+                onChange={(e) =>
+                  updateQualitySection("description", e.target.value)
+                }
+                rows={3}
+              />
+            </div>
+            <div>
+              <FieldLabel>Highlight Word</FieldLabel>
+              <p className="text-xs text-gray-400 mb-2">
+                Every time this appears in the description it is shown bold and
+                in the brand green. Leave empty for no highlight.
+              </p>
+              <input
+                type="text"
+                className={INPUT_CLASS}
+                value={settings.qualitySection?.highlightWord || ""}
+                onChange={(e) =>
+                  updateQualitySection("highlightWord", e.target.value)
+                }
+              />
+            </div>
+            <div>
+              <FieldLabel>Section Image</FieldLabel>
+              <p className="text-xs text-gray-400 mb-2">
+                Shown beside &quot;Quality you can taste&quot; on the home page.
+                Landscape, 4:3 — 1200x900px works well.
+              </p>
+              <div className="flex flex-col gap-3">
+                {settings.qualitySection?.image ? (
+                  <div className="relative group w-full max-w-sm aspect-[4/3] bg-gray-50 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+                    <Image
+                      src={settings.qualitySection.image}
+                      alt="Quality section"
+                      className="w-full h-full object-cover"
+                      fill
+                      unoptimized
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button
+                        type="button"
+                        onClick={() => updateQualitySection("image", "")}
+                        className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="w-full max-w-sm aspect-[4/3] border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-primary transition-colors text-gray-400">
+                    <ImageIcon size={24} />
+                    <span className="text-xs font-semibold">Upload image</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleQualityImageUpload}
+                    />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-b pb-4 pt-8">
+              <h2 className="text-lg font-black text-primary-dark uppercase tracking-tight">
+                Progress Bars
+              </h2>
+              <button
+                type="button"
+                onClick={addQualityStat}
+                className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-dark transition-colors"
+              >
+                <Plus size={14} />
+                Add Bar
+              </button>
+            </div>
+
+            <div className="space-y-4 pt-4">
+              {(settings.qualitySection?.stats || []).length === 0 && (
+                <p className="text-sm text-gray-400 text-center py-8">
+                  No bars yet. The section shows just the heading, text and
+                  image until you add one.
+                </p>
+              )}
+
+              {(settings.qualitySection?.stats || []).map(
+                (stat: any, i: number) => (
+                  <div
+                    key={i}
+                    className="p-5 border border-gray-100 rounded-2xl bg-gray-50/30 flex flex-col sm:flex-row sm:items-end gap-4"
+                  >
+                    <div className="flex-1">
+                      <FieldLabel>Label</FieldLabel>
+                      <input
+                        type="text"
+                        className={INPUT_CLASS}
+                        value={stat?.label || ""}
+                        onChange={(e) =>
+                          updateQualityStat(i, "label", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="w-full sm:w-32">
+                      <FieldLabel>Percent</FieldLabel>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        className={INPUT_CLASS}
+                        value={stat?.value ?? ""}
+                        onChange={(e) =>
+                          updateQualityStat(
+                            i,
+                            "value",
+                            e.target.value === "" ? "" : Number(e.target.value),
+                          )
+                        }
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeQualityStat(i)}
+                      className="p-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors self-start sm:self-auto"
+                      aria-label={`Remove bar ${i + 1}`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 ),
               )}

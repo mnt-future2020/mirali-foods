@@ -61,7 +61,7 @@ export const getSettings = unstable_cache(
   async () => {
     await connectDB();
     const settings = await Settings.findOne()
-      .select("manageInventory aboutUs ourStory whyChooseUs trustSection")
+      .select("manageInventory aboutUs ourStory whyChooseUs trustSection qualitySection")
       .lean();
     return JSON.parse(JSON.stringify(settings || {}));
   },
