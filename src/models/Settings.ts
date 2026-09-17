@@ -163,7 +163,20 @@ const SettingsSchema = new Schema(
     // Home page "Quality you can taste" section. Default mirrors the image the
     // section was hardcoded with, so an unconfigured store renders unchanged.
     qualitySection: {
-      image: { type: String, default: "https://6dfa0433ff.imgdist.com/pub/bfra/9ghkfuy7/6xn/dfh/i4j/dried-chili-pepper-pouring-out-from-sac-floor_1150-35720.jpg" }
+      title: { type: String, default: "Quality you can taste, ingredients you can trust." },
+      description: { type: String, default: "Our customers trust Miraly Foods for consistently superior quality. Because great food starts with great ingredients — sourced responsibly, prepared with care." },
+      // Every occurrence of this word in the description is bolded.
+      highlightWord: { type: String, default: "Miraly Foods" },
+      image: { type: String, default: "https://6dfa0433ff.imgdist.com/pub/bfra/9ghkfuy7/6xn/dfh/i4j/dried-chili-pepper-pouring-out-from-sac-floor_1150-35720.jpg" },
+      stats: {
+        type: [{ label: String, value: Number }],
+        default: [
+          { label: "Natural Ingredients", value: 100 },
+          { label: "No Preservatives", value: 100 },
+          { label: "Farm Fresh Quality", value: 100 },
+          { label: "Customer Satisfaction", value: 100 }
+        ]
+      }
     },
   },
   {

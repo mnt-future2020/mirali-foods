@@ -7,6 +7,7 @@ import {
   TRUST_ICONS,
   TRUST_SECTION_DEFAULTS,
 } from "@/components/TrustSection";
+import { QUALITY_SECTION_DEFAULTS } from "@/components/BeforeAfter";
 import toast from "react-hot-toast";
 
 const INPUT_CLASS =
@@ -33,7 +34,13 @@ export default function CmsClient({
     trustSection: initialSettings?.trustSection?.features?.length
       ? initialSettings.trustSection
       : structuredClone(TRUST_SECTION_DEFAULTS),
-    qualitySection: initialSettings?.qualitySection || {},
+    qualitySection: {
+      ...QUALITY_SECTION_DEFAULTS,
+      ...(initialSettings?.qualitySection || {}),
+      stats: initialSettings?.qualitySection?.stats?.length
+        ? initialSettings.qualitySection.stats
+        : structuredClone(QUALITY_SECTION_DEFAULTS.stats),
+    },
   }));
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<
@@ -49,7 +56,13 @@ export default function CmsClient({
     trustSection: initialSettings?.trustSection?.features?.length
       ? initialSettings.trustSection
       : structuredClone(TRUST_SECTION_DEFAULTS),
-    qualitySection: initialSettings?.qualitySection || {},
+    qualitySection: {
+      ...QUALITY_SECTION_DEFAULTS,
+      ...(initialSettings?.qualitySection || {}),
+      stats: initialSettings?.qualitySection?.stats?.length
+        ? initialSettings.qualitySection.stats
+        : structuredClone(QUALITY_SECTION_DEFAULTS.stats),
+    },
     });
   }, [initialSettings]);
 
@@ -115,6 +128,33 @@ export default function CmsClient({
       ...prev,
       qualitySection: { ...(prev.qualitySection || {}), [field]: value },
     }));
+  };
+
+  const updateQualityStat = (index: number, field: string, value: any) => {
+    setSettings((prev: any) => {
+      const qualitySection = prev.qualitySection || {};
+      const stats = [...(qualitySection.stats || [])];
+      stats[index] = { ...(stats[index] || {}), [field]: value };
+      return { ...prev, qualitySection: { ...qualitySection, stats } };
+    });
+  };
+
+  const addQualityStat = () => {
+    setSettings((prev: any) => {
+      const qualitySection = prev.qualitySection || {};
+      const stats = [...(qualitySection.stats || []), { label: "", value: 100 }];
+      return { ...prev, qualitySection: { ...qualitySection, stats } };
+    });
+  };
+
+  const removeQualityStat = (index: number) => {
+    setSettings((prev: any) => {
+      const qualitySection = prev.qualitySection || {};
+      const stats = (qualitySection.stats || []).filter(
+        (_: any, i: number) => i !== index,
+      );
+      return { ...prev, qualitySection: { ...qualitySection, stats } };
+    });
   };
 
   const handleQualityImageUpload = (
@@ -765,6 +805,41 @@ export default function CmsClient({
               Quality Section
             </h2>
             <div>
+              <FieldLabel>Heading</FieldLabel>
+              <textarea
+                className={INPUT_CLASS}
+                value={settings.qualitySection?.title || ""}
+                onChange={(e) => updateQualitySection("title", e.target.value)}
+                rows={2}
+              />
+            </div>
+            <div>
+              <FieldLabel>Description</FieldLabel>
+              <textarea
+                className={INPUT_CLASS}
+                value={settings.qualitySection?.description || ""}
+                onChange={(e) =>
+                  updateQualitySection("description", e.target.value)
+                }
+                rows={3}
+              />
+            </div>
+            <div>
+              <FieldLabel>Highlight Word</FieldLabel>
+              <p className="text-xs text-gray-400 mb-2">
+                Every time this appears in the description it is shown bold and
+                in the brand green. Leave empty for no highlight.
+              </p>
+              <input
+                type="text"
+                className={INPUT_CLASS}
+                value={settings.qualitySection?.highlightWord || ""}
+                onChange={(e) =>
+                  updateQualitySection("highlightWord", e.target.value)
+                }
+              />
+            </div>
+            <div>
               <FieldLabel>Section Image</FieldLabel>
               <p className="text-xs text-gray-400 mb-2">
                 Shown beside &quot;Quality you can taste&quot; on the home page.
@@ -803,6 +878,75 @@ export default function CmsClient({
                   </label>
                 )}
               </div>
+            </div>
+
+            <div className="flex items-center justify-between border-b pb-4 pt-8">
+              <h2 className="text-lg font-black text-primary-dark uppercase tracking-tight">
+                Progress Bars
+              </h2>
+              <button
+                type="button"
+                onClick={addQualityStat}
+                className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-primary-dark transition-colors"
+              >
+                <Plus size={14} />
+                Add Bar
+              </button>
+            </div>
+
+            <div className="space-y-4 pt-4">
+              {(settings.qualitySection?.stats || []).length === 0 && (
+                <p className="text-sm text-gray-400 text-center py-8">
+                  No bars yet. The section shows just the heading, text and
+                  image until you add one.
+                </p>
+              )}
+
+              {(settings.qualitySection?.stats || []).map(
+                (stat: any, i: number) => (
+                  <div
+                    key={i}
+                    className="p-5 border border-gray-100 rounded-2xl bg-gray-50/30 flex flex-col sm:flex-row sm:items-end gap-4"
+                  >
+                    <div className="flex-1">
+                      <FieldLabel>Label</FieldLabel>
+                      <input
+                        type="text"
+                        className={INPUT_CLASS}
+                        value={stat?.label || ""}
+                        onChange={(e) =>
+                          updateQualityStat(i, "label", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="w-full sm:w-32">
+                      <FieldLabel>Percent</FieldLabel>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        className={INPUT_CLASS}
+                        value={stat?.value ?? ""}
+                        onChange={(e) =>
+                          updateQualityStat(
+                            i,
+                            "value",
+                            e.target.value === "" ? "" : Number(e.target.value),
+                          )
+                        }
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeQualityStat(i)}
+                      className="p-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors self-start sm:self-auto"
+                      aria-label={`Remove bar ${i + 1}`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ),
+              )}
             </div>
           </>
         )}
