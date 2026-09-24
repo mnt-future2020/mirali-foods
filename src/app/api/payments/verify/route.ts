@@ -191,50 +191,54 @@ export async function POST(req: Request) {
       }
     }
 
-    // Check if webhook is configured
-    const hasWebhook =
-      paymentConfig?.webhookSecret &&
-      paymentConfig.webhookSecret.trim() !== "";
-
-    if (hasWebhook) {
-      console.log(
-        `Order ${createdOrder._id} created. Webhook will handle invoice email.`,
-      );
-    } else {
-      // No webhook — send email asynchronously (fire and forget)
-      console.log(
-        `No webhook configured. Sending invoice email for order ${createdOrder._id}...`,
-      );
-
-      (async () => {
-        try {
-          const { sendOrderConfirmationEmail, sendAdminNewOrderEmail } = await import("@/lib/email-service");
-          const populatedOrder = await Order.findById(createdOrder._id).populate("user");
-
-          let pdfBuffer = null;
-          try {
-            const { generateInvoiceHTML } = await import("@/lib/invoice-generator");
-            const { generatePDFFromHTML } = await import("@/lib/pdf-generator");
-            const invoiceHTML = await generateInvoiceHTML(populatedOrder);
-            pdfBuffer = await generatePDFFromHTML(invoiceHTML);
-          } catch (pdfError) {
-            console.warn("PDF generation failed, sending email without attachment:", (pdfError as Error).message);
-          }
-
-          await sendOrderConfirmationEmail(populatedOrder, pdfBuffer);
-          await sendAdminNewOrderEmail(populatedOrder, pdfBuffer);
-
-          await Order.findByIdAndUpdate(createdOrder._id, {
-            invoiceEmailSent: true,
-            invoiceEmailSentAt: new Date(),
-          });
-
-          console.log(`Invoice & email sent for order ${createdOrder._id}`);
-        } catch (emailError) {
-          console.error("Failed to send order confirmation email:", emailError);
+    // Always attempt the confirmation email here, even when a webhook is
+    // configured. The webhook fires the moment Razorpay captures the payment,
+    // which can be *before* this route has created the order — it then finds
+    // nothing to email and gives up. Deferring to it left orders with no
+    // confirmation at all. Both senders now race for the same atomic claim on
+    // invoiceEmailSent, so whichever arrives first sends and the other skips.
+    (async () => {
+      try {
+        // Claim the send before doing any work, so the webhook cannot
+        // duplicate it while the PDF is being generated.
+        const claimed = await Order.findOneAndUpdate(
+          { _id: createdOrder._id, invoiceEmailSent: { $ne: true } },
+          { invoiceEmailSent: true, invoiceEmailSentAt: new Date() },
+          { new: false },
+        );
+        if (!claimed) {
+          console.log(
+            `Invoice email for order ${createdOrder._id} already claimed (webhook got there first).`,
+          );
+          return;
         }
-      })();
-    }
+
+        const { sendOrderConfirmationEmail, sendAdminNewOrderEmail } = await import("@/lib/email-service");
+        const populatedOrder = await Order.findById(createdOrder._id).populate("user");
+
+        let pdfBuffer = null;
+        try {
+          const { generateInvoiceHTML } = await import("@/lib/invoice-generator");
+          const { generatePDFFromHTML } = await import("@/lib/pdf-generator");
+          const invoiceHTML = await generateInvoiceHTML(populatedOrder);
+          pdfBuffer = await generatePDFFromHTML(invoiceHTML);
+        } catch (pdfError) {
+          console.warn("PDF generation failed, sending email without attachment:", (pdfError as Error).message);
+        }
+
+        await sendOrderConfirmationEmail(populatedOrder, pdfBuffer);
+        await sendAdminNewOrderEmail(populatedOrder, pdfBuffer);
+
+        console.log(`Invoice & email sent for order ${createdOrder._id}`);
+      } catch (emailError) {
+        // Release the claim so the webhook (or a retry) can try again.
+        await Order.findByIdAndUpdate(createdOrder._id, {
+          invoiceEmailSent: false,
+          $unset: { invoiceEmailSentAt: "" },
+        }).catch(() => {});
+        console.error("Failed to send order confirmation email:", emailError);
+      }
+    })();
 
     invalidateCache(CACHE_KEYS.PRODUCTS, CACHE_KEYS.FEATURED, CACHE_KEYS.PRODUCT_SLUG);
     revalidatePath("/orders");

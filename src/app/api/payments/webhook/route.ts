@@ -139,6 +139,13 @@ export async function POST(req: Request) {
         console.log(
           `ℹ️ [Webhook] No order found for payment ${razorpayPaymentId}. It may not have been created yet.`,
         );
+        // Answering 200 here tells Razorpay the event is handled and it never
+        // retries, so an event that beat the order into existence was lost.
+        // A non-2xx asks for a redelivery, by which time the order exists.
+        return NextResponse.json(
+          { success: false, error: "order_not_found_yet" },
+          { status: 404 },
+        );
       }
     }
 
